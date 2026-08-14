@@ -1,5 +1,5 @@
 <template>
-  <div class="os" data-theme="{{ theme }}">
+  <div class="os" birr:bind:data-theme="theme">
     <div class="status-bar">
       <span class="status-time">{{ clockTime }}</span>
       <span class="status-date">{{ hijriDate }}</span>

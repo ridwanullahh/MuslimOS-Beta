@@ -22,6 +22,8 @@ import type { TemplateNode } from '../parser/template.js';
 export interface CodegenOptions {
     /** Identifiers returned by setup() — these get auto-unwrapped in expressions. */
     stateKeys?: Set<string>;
+    /** Scope ID (e.g. 'data-birr-abc123') added to every element for scoped CSS. */
+    scopeId?: string;
 }
 export interface CodegenResult {
     /** The generated render function body (statements). */

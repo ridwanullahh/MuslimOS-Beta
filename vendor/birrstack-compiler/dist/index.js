@@ -23,7 +23,10 @@ export function compile(source, options = {}) {
     }
     const ast = parseTemplate(descriptor.template.content);
     const setupKeys = extractSetupReturnKeys(descriptor.script.content);
-    const codegen = generateRender(ast, { stateKeys: new Set(setupKeys) });
+    // Generate the scopeId BEFORE codegen so it can be passed to generateRender
+    // and added as an attribute to every element (required for scoped CSS to match).
+    const scopeId = options.scopeId ?? `data-birr-${Math.random().toString(36).slice(2, 10)}`;
+    const codegen = generateRender(ast, { stateKeys: new Set(setupKeys), scopeId });
     // Detect which names the user's <script> already imports from the core
     // package so we don't emit a duplicate import declaration (which would
     // cause rollup to fail with "Identifier X has already been declared").
@@ -46,7 +49,6 @@ export function compile(source, options = {}) {
         : '';
     // Build CSS (extracted, not injected via JS)
     let css = '';
-    const scopeId = options.scopeId ?? `data-birr-${Math.random().toString(36).slice(2, 10)}`;
     for (const style of descriptor.styles) {
         if (style.scoped) {
             css += scopeCss(style.content, scopeId) + '\n';
@@ -390,19 +392,17 @@ function extractSetupReturnKeys(scriptContent) {
         const c = body[k2];
         const next = body[k2 + 1] ?? '';
         if (pInLineComment) {
+            // Skip comment characters entirely (don't add to part)
             if (c === '\n')
                 pInLineComment = false;
-            part += c;
             continue;
         }
         if (pInBlockComment) {
             if (c === '*' && next === '/') {
                 pInBlockComment = false;
-                part += '*/';
                 k2++;
                 continue;
             }
-            part += c;
             continue;
         }
         if (pInString) {
@@ -418,12 +418,11 @@ function extractSetupReturnKeys(scriptContent) {
         }
         if (c === '/' && next === '/') {
             pInLineComment = true;
-            part += c;
             continue;
         }
         if (c === '/' && next === '*') {
             pInBlockComment = true;
-            part += c;
+            k2++;
             continue;
         }
         if (c === '"' || c === "'" || c === '`') {
