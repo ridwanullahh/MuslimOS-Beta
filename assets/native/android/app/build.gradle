@@ -1,0 +1,8 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.birrstack.muslimos'
+    compileSdk 34
+    defaultConfig { applicationId "com.birrstack.muslimos"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0" }
+    buildTypes { release { minifyEnabled false } }
+}
+dependencies { implementation 'androidx.webkit:webkit:1.10.0' }
