@@ -826,24 +826,35 @@ export default {
         prayerTimes.value = pt;
         const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
         const times = [pt.fajr, pt.dhuhr, pt.asr, pt.maghrib, pt.isha];
-        const current = new Date();
+        // Prayer times are in the LOCATION's timezone (pt.timezone).
+        // Compare against the current time in the SAME timezone so the
+        // countdown is correct regardless of the browser's local timezone.
+        const now = new Date();
+        const tz = pt.timezone || 0;
+        const locationNow = new Date(now.getTime() + tz * 3600000);
+        const currentMinutes = locationNow.getUTCHours() * 60 + locationNow.getUTCMinutes();
         for (let i = 0; i < prayers.length; i++) {
           const [h, m] = times[i].split(':').map(Number);
-          const prayerDate = new Date();
-          prayerDate.setHours(h, m, 0, 0);
-          if (prayerDate > current) {
+          const prayerMinutes = h * 60 + m;
+          if (prayerMinutes > currentMinutes) {
             nextPrayerName.value = prayers[i];
             nextPrayerTime.value = times[i];
-            const diff = prayerDate - current;
-            const hours = Math.floor(diff / 3600000);
-            const mins = Math.floor((diff % 3600000) / 60000);
+            const diffMinutes = prayerMinutes - currentMinutes;
+            const hours = Math.floor(diffMinutes / 60);
+            const mins = diffMinutes % 60;
             prayerCountdown.value = `in ${hours}h ${mins}m`;
             return;
           }
         }
         nextPrayerName.value = 'Fajr';
         nextPrayerTime.value = pt.fajr;
-        prayerCountdown.value = 'tomorrow';
+        // Time until tomorrow's Fajr
+        const [fh, fm] = pt.fajr.split(':').map(Number);
+        const fajnMinutes = fh * 60 + fm;
+        const diffMinutes = (24 * 60 - currentMinutes) + fajnMinutes;
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+        prayerCountdown.value = `in ${hours}h ${mins}m`;
       } catch { prayerTimes.value = null; }
     }
     loadPrayerTimes();
