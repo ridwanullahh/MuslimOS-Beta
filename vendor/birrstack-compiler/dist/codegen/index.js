@@ -50,7 +50,7 @@ function generateElement(node, imports, parentVar) {
         const factoryBody = generateChildren(node.children ?? [], imports, '__host');
         return `const ${anchorVar} = document.createComment('birr:if');
 ${parentVar}.appendChild(${anchorVar});
-bindConditional(${parentVar}, ${anchorVar}, ${ifExpr}, () => {
+bindConditional(${parentVar}, ${anchorVar}, () => (${ifExpr}), () => {
   const __host = h('${node.tag}', ${propsObject(attrs, imports)}, []);
 ${factoryBody}
   return __host;
@@ -86,7 +86,7 @@ ${factoryBody}
         delete childAttrs['birr:key'];
         return `const ${anchorVar} = document.createComment('birr:for');
 ${parentVar}.appendChild(${anchorVar});
-bindList(${parentVar}, ${anchorVar}, ${listExpr}, (${itemName}, ${indexName}) => {
+bindList(${parentVar}, ${anchorVar}, () => (${listExpr}), (${itemName}, ${indexName}) => {
   const __host = h('${node.tag}', ${propsObject(childAttrs, imports)}, []);
 ${childBody}
   return __host;
@@ -117,7 +117,7 @@ function generateText(node, parentVar) {
 }
 function generateInterpolation(node, imports, parentVar) {
     imports.add('text');
-    return `${parentVar}.appendChild(text(${node.expression}));`;
+    return `${parentVar}.appendChild(text(() => ${node.expression}));`;
 }
 function propsObject(attrs, imports) {
     const entries = [];
@@ -129,11 +129,23 @@ function propsObject(attrs, imports) {
         }
         else if (key.startsWith('birr:on:')) {
             const event = key.slice('birr:on:'.length);
-            entries.push(`${JSON.stringify(`birr:on:${event}`)}: ${value}`);
+            const trimmed = value.trim();
+            // Simple identifier (function reference) → use as-is. Call expression → wrap in arrow function.
+            if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) {
+                entries.push(`${JSON.stringify(`birr:on:${event}`)}: ${trimmed}`);
+            }
+            else {
+                entries.push(`${JSON.stringify(`birr:on:${event}`)}: () => (${trimmed})`);
+            }
         }
         else if (key.startsWith('birr:bind:')) {
             const attr = key.slice('birr:bind:'.length);
             entries.push(`${JSON.stringify(`birr:bind:${attr}`)}: ${value}`);
+        }
+        else if (typeof value === 'string' && value.includes('{{')) {
+            // Attribute value contains interpolation — compile to a function.
+            const fn = compileAttrInterpolation(value);
+            entries.push(`${JSON.stringify(`birr:bind:${key}`)}: ${fn}`);
         }
         else {
             // Static attribute — use string value
@@ -142,6 +154,34 @@ function propsObject(attrs, imports) {
     }
     void imports;
     return `{ ${entries.join(', ')} }`;
+}
+/** Compile an attribute value containing {{ }} interpolation into a function expression. */
+function compileAttrInterpolation(value) {
+    const segments = [];
+    let i = 0;
+    while (i < value.length) {
+        const open = value.indexOf('{{', i);
+        if (open === -1) {
+            segments.push({ kind: 'text', text: value.slice(i) });
+            break;
+        }
+        if (open > i) {
+            segments.push({ kind: 'text', text: value.slice(i, open) });
+        }
+        const close = value.indexOf('}}', open + 2);
+        if (close === -1) {
+            segments.push({ kind: 'text', text: value.slice(i) });
+            break;
+        }
+        const expr = value.slice(open + 2, close).trim();
+        segments.push({ kind: 'expr', expr });
+        i = close + 2;
+    }
+    if (segments.length === 1 && segments[0].kind === 'expr') {
+        return `() => (${segments[0].expr})`;
+    }
+    const parts = segments.map(s => s.kind === 'text' ? JSON.stringify(s.text) : `String(${s.expr})`);
+    return `() => (${parts.join(' + ')})`;
 }
 let varCounter = 0;
 function freshVar(prefix) {
