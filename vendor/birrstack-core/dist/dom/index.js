@@ -24,7 +24,7 @@ export function h(tag, props = {}, children = []) {
             const attr = key.slice('birr:bind:'.length);
             bindAttr(el, attr, value);
         }
-        else if (key === 'class' && (isReactive(value) || typeof value === 'function')) {
+        else if (key === 'class' && isReactive(value)) {
             bindAttr(el, 'class', value);
         }
         else if (key === 'style' && typeof value === 'object' && value !== null && !isReactive(value)) {
@@ -64,24 +64,12 @@ export function appendChild(parent, child) {
         return;
     }
 }
-/** Bind an element attribute to a reactive cell, function, or static value. */
+/** Bind an element attribute to a reactive cell. */
 export function bindAttr(el, attr, value) {
     if (isReactive(value)) {
         const reactive = value;
         effect(() => {
             const v = reactive.value;
-            if (v === null || v === undefined || v === false) {
-                el.removeAttribute(attr);
-            }
-            else {
-                el.setAttribute(attr, String(v));
-            }
-        });
-    }
-    else if (typeof value === 'function') {
-        // Function form: re-evaluate inside an effect for reactive dependencies.
-        effect(() => {
-            const v = value();
             if (v === null || v === undefined || v === false) {
                 el.removeAttribute(attr);
             }
@@ -103,21 +91,6 @@ export function bindConditional(parent, anchor, condition, factory) {
         return;
     }
     let current = null;
-    if (typeof condition === 'function') {
-        // Function form: re-evaluate inside an effect for reactive dependencies.
-        effect(() => {
-            const shouldShow = Boolean(condition());
-            if (shouldShow && current === null) {
-                current = factory();
-                parent.insertBefore(current, anchor);
-            }
-            else if (!shouldShow && current !== null) {
-                parent.removeChild(current);
-                current = null;
-            }
-        });
-        return;
-    }
     const reactive = condition;
     effect(() => {
         const shouldShow = Boolean(reactive.value);
@@ -140,32 +113,6 @@ export function bindList(parent, anchor, source, render, getKey) {
         return;
     }
     let rendered = new Map();
-    if (typeof source === 'function') {
-        // Function form: re-evaluate inside an effect for reactive dependencies.
-        effect(() => {
-            const items = source() || [];
-            const newRendered = new Map();
-            const keys = new Set();
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const key = getKey ? getKey(item, i) : `__idx_${i}`;
-                keys.add(key);
-                let node = rendered.get(key);
-                if (node === undefined) {
-                    node = render(item, i);
-                }
-                newRendered.set(key, node);
-                parent.insertBefore(node, anchor);
-            }
-            for (const [key, node] of rendered) {
-                if (!keys.has(key)) {
-                    parent.removeChild(node);
-                }
-            }
-            rendered = newRendered;
-        });
-        return;
-    }
     const reactive = source;
     effect(() => {
         const items = reactive.value;
@@ -191,16 +138,8 @@ export function bindList(parent, anchor, source, render, getKey) {
         rendered = newRendered;
     });
 }
-/** Create a text node bound to a reactive cell, function, or static value. */
+/** Create a text node bound to a reactive cell. */
 export function text(value) {
-    if (typeof value === 'function') {
-        // Function form: re-evaluate inside an effect for reactive dependencies.
-        const node = document.createTextNode(String(value()));
-        effect(() => {
-            node.nodeValue = String(value());
-        });
-        return node;
-    }
     if (isReactive(value)) {
         const reactive = value;
         const node = document.createTextNode(String(reactive.value));
