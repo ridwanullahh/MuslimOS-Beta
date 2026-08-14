@@ -157,7 +157,8 @@ export function generateRender(nodes, options = {}) {
     const imports = new Set(['h']);
     const body = [];
     const stateKeys = options.stateKeys ?? new Set();
-    const ctx = { imports, stateKeys };
+    const scopeId = options.scopeId ?? '';
+    const ctx = { imports, stateKeys, scopeId };
     for (const node of nodes) {
         const stmt = generateNode(node, ctx, 'host');
         if (stmt)
@@ -233,6 +234,7 @@ ${factoryBody}
         const childCtx = {
             imports: ctx.imports,
             stateKeys: new Set([...stateKeys, itemName, indexName]),
+            scopeId: ctx.scopeId,
         };
         const childBody = generateChildren(node.children ?? [], childCtx, '__host', [`${itemName}`, `${indexName}`]);
         const keyExpr = childAttrs['birr:key'];
@@ -293,8 +295,12 @@ function generateInterpolation(node, ctx, parentVar) {
     return `${parentVar}.appendChild(text(computed(() => ${transformed})));`;
 }
 function propsObject(attrs, ctx) {
-    const { imports, stateKeys } = ctx;
+    const { imports, stateKeys, scopeId } = ctx;
     const entries = [];
+    // Add the scopeId attribute to every element for scoped CSS matching.
+    if (scopeId) {
+        entries.push(`${JSON.stringify(scopeId)}: ""`);
+    }
     for (const [key, value] of Object.entries(attrs)) {
         if (key === 'birr:if' || key === 'birr:for')
             continue;
