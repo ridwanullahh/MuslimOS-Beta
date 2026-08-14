@@ -63,7 +63,662 @@
         </button>
         <h2 class="app-title">{{ activeAppName }}</h2>
       </div>
-      <div class="app-content" id="app-content-{{ activeApp }}"></div>
+
+      <!-- =================== IBADAH =================== -->
+
+      <!-- QURAN APP -->
+      <div birr:if="activeApp === 'quran'" class="app-content app-quran">
+        <div birr:if="quranCurrentSurah === null" class="quran-list">
+          <p birr:if="quranSurahList.length === 0 && quranLoading" class="loading-text">Loading surahs…</p>
+          <button birr:for="s in quranSurahList" birr:key="s.number" class="surah-row" birr:on:click="openSurah(s.number)">
+            <span class="surah-num">{{ s.number }}</span>
+            <div class="surah-info">
+              <span class="surah-name-en">{{ s.englishName }}</span>
+              <span class="surah-meta">{{ s.englishNameTranslation }} · {{ s.numberOfAyahs }} ayahs · {{ s.revelationType }}</span>
+            </div>
+            <span class="surah-name-ar">{{ s.name }}</span>
+          </button>
+        </div>
+        <div birr:if="quranCurrentSurah !== null" class="quran-detail">
+          <button class="btn-secondary" birr:on:click="closeSurah()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            All Surahs
+          </button>
+          <h3 class="quran-detail-title">{{ quranCurrentSurahMeta.englishName }} ({{ quranCurrentSurahMeta.englishNameTranslation }})</h3>
+          <p class="quran-detail-meta">{{ quranCurrentSurahMeta.numberOfAyahs }} ayahs · {{ quranCurrentSurahMeta.revelationType }}</p>
+          <p birr:if="quranLoading" class="loading-text">Loading verses…</p>
+          <p birr:if="quranError" class="error-text">{{ quranError }}</p>
+          <div birr:for="v in quranVerses" birr:key="v.numberInSurah" class="verse-card">
+            <div class="verse-header">
+              <span class="verse-num">{{ v.numberInSurah }}</span>
+              <button class="verse-play" birr:on:click="playSurahAudio(quranCurrentSurah)" aria-label="Play recitation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>
+              </button>
+            </div>
+            <p class="verse-arabic" dir="rtl">{{ v.arabic }}</p>
+            <p birr:if="v.transliteration" class="verse-translit">{{ v.transliteration }}</p>
+            <p class="verse-translation">{{ v.translation }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- HADITH APP -->
+      <div birr:if="activeApp === 'hadith'" class="app-content app-hadith">
+        <div class="hadith-header">
+          <h3 class="hadith-collection-title">Forty Hadith of An-Nawawi</h3>
+          <p class="hadith-collection-sub">الأربعون النووية — {{ hadithList.length }} hadiths</p>
+        </div>
+        <div birr:for="hd in hadithList" birr:key="hd.number" class="hadith-card">
+          <div class="hadith-card-head">
+            <span class="hadith-num">Hadith {{ hd.number }}</span>
+            <span class="hadith-narrator">{{ hd.narrator }}</span>
+          </div>
+          <p class="hadith-arabic" dir="rtl">{{ hd.arabic }}</p>
+          <p class="hadith-english">{{ hd.english }}</p>
+          <p class="hadith-source">{{ hd.source }}</p>
+        </div>
+      </div>
+
+      <!-- PRAYER TIMES APP -->
+      <div birr:if="activeApp === 'prayer'" class="app-content app-prayer">
+        <div birr:if="prayerTimes" class="prayer-list">
+          <div class="prayer-card-row">
+            <span class="prayer-row-name">Fajr</span>
+            <span class="prayer-row-time">{{ prayerTimes.fajr }}</span>
+          </div>
+          <div class="prayer-card-row muted">
+            <span class="prayer-row-name">Sunrise</span>
+            <span class="prayer-row-time">{{ prayerTimes.sunrise }}</span>
+          </div>
+          <div class="prayer-card-row">
+            <span class="prayer-row-name">Dhuhr</span>
+            <span class="prayer-row-time">{{ prayerTimes.dhuhr }}</span>
+          </div>
+          <div class="prayer-card-row">
+            <span class="prayer-row-name">Asr</span>
+            <span class="prayer-row-time">{{ prayerTimes.asr }}</span>
+          </div>
+          <div class="prayer-card-row">
+            <span class="prayer-row-name">Maghrib</span>
+            <span class="prayer-row-time">{{ prayerTimes.maghrib }}</span>
+          </div>
+          <div class="prayer-card-row">
+            <span class="prayer-row-name">Isha</span>
+            <span class="prayer-row-time">{{ prayerTimes.isha }}</span>
+          </div>
+          <div class="prayer-next-card">
+            <div class="prayer-next-label">Next: {{ nextPrayerName }}</div>
+            <div class="prayer-next-time">{{ nextPrayerTime }}</div>
+            <div class="prayer-next-countdown">{{ prayerCountdown }}</div>
+          </div>
+          <p class="prayer-method">Method: {{ prayerTimes.method }}</p>
+          <button class="btn-secondary" birr:on:click="refreshPrayerTimes()">Refresh Times</button>
+        </div>
+        <p birr:if="prayerTimes === null" class="loading-text">Loading prayer times…</p>
+      </div>
+
+      <!-- QIBLA APP -->
+      <div birr:if="activeApp === 'qibla'" class="app-content app-qibla">
+        <div class="qibla-compass-wrap">
+          <div class="qibla-compass" style="transform: rotate({{ qiblaCompassRotation }}deg)">
+            <svg width="240" height="240" viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r="110" fill="none" stroke="var(--border)" stroke-width="2"/>
+              <text x="120" y="32" text-anchor="middle" font-size="18" fill="var(--muted)">N</text>
+              <text x="120" y="220" text-anchor="middle" font-size="18" fill="var(--muted)">S</text>
+              <text x="220" y="125" text-anchor="middle" font-size="18" fill="var(--muted)">E</text>
+              <text x="20" y="125" text-anchor="middle" font-size="18" fill="var(--muted)">W</text>
+              <g style="transform: rotate({{ qiblaNeedleRotation }}deg); transform-origin: 120px 120px; transition: transform 0.2s ease">
+                <polygon points="120,40 110,120 130,120" fill="var(--primary)"/>
+                <polygon points="120,200 110,120 130,120" fill="var(--muted)"/>
+                <circle cx="120" cy="120" r="8" fill="var(--accent)"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <p class="qibla-bearing">Bearing to Ka'bah: <strong>{{ qiblaBearing.toFixed(1) }}°</strong></p>
+        <p birr:if="qiblaDistance > 0" class="qibla-distance">Distance: {{ qiblaDistance.toFixed(0) }} km</p>
+        <p birr:if="qiblaHeading !== null" class="qibla-heading">Your heading: {{ qiblaHeading.toFixed(0) }}°</p>
+        <p birr:if="qiblaOrientationSupported === false" class="qibla-hint">Device orientation not available. The green arrow shows the direction to the Ka'bah from your location relative to North.</p>
+        <button class="btn-primary" birr:on:click="calibrateQibla()">Enable Live Compass</button>
+      </div>
+
+      <!-- TASBIH APP -->
+      <div birr:if="activeApp === 'tasbih'" class="app-content app-tasbih">
+        <div class="tasbih-presets">
+          <button birr:for="p in tasbihPresets" birr:key="p.id" class="tasbih-preset {{ tasbihPresetActiveClass(p.id) }}" birr:on:click="setTasbihPreset(p.id)">{{ p.name }}</button>
+        </div>
+        <div class="tasbih-display">
+          <div class="tasbih-count">{{ tasbihCount }}</div>
+          <div class="tasbih-target">of {{ tasbihTarget }}</div>
+          <div class="tasbih-progress-bar">
+            <div class="tasbih-progress-fill" style="width: {{ tasbihProgress }}%"></div>
+          </div>
+          <div class="tasbih-total">Total today: {{ tasbihTotal }}</div>
+        </div>
+        <button class="tasbih-tap" birr:on:click="tasbihIncrement()">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 110 12 6 6 0 010-12z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Tap to count</span>
+        </button>
+        <div class="tasbih-controls">
+          <button class="btn-secondary" birr:on:click="tasbihReset()">Reset Count</button>
+          <button class="btn-secondary" birr:on:click="tasbihResetTotal()">Reset Total</button>
+        </div>
+        <p class="tasbih-dhikr-arabic" dir="rtl">{{ tasbihCurrentDhikr.arabic }}</p>
+        <p class="tasbih-dhikr-translit">{{ tasbihCurrentDhikr.transliteration }}</p>
+      </div>
+
+      <!-- DUA APP -->
+      <div birr:if="activeApp === 'dua'" class="app-content app-dua">
+        <div class="dua-categories">
+          <button birr:for="c in duaCategories" birr:key="c.id" class="dua-cat {{ duaCatActiveClass(c.id) }}" birr:on:click="setDuaCategory(c.id)">{{ c.name }}</button>
+        </div>
+        <div birr:for="d in duaFiltered" birr:key="d.id" class="dua-card">
+          <h3 class="dua-title">{{ d.title }}</h3>
+          <p class="dua-arabic" dir="rtl">{{ d.arabic }}</p>
+          <p birr:if="d.transliteration" class="dua-translit">{{ d.transliteration }}</p>
+          <p class="dua-translation">{{ d.translation }}</p>
+          <p class="dua-reference">{{ d.reference }}</p>
+          <button class="dua-fav-btn {{ duaFavClass(d.id) }}" birr:on:click="toggleFavorite('dua', d.id, d.title)" aria-label="Save to favorites">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p birr:if="duaFiltered.length === 0" class="empty-text">No duas in this category.</p>
+      </div>
+
+      <!-- 99 NAMES APP -->
+      <div birr:if="activeApp === 'names'" class="app-content app-names">
+        <div class="names-card">
+          <div class="names-num">{{ namesCurrent.number }} / 99</div>
+          <p class="names-arabic" dir="rtl">{{ namesCurrent.arabic }}</p>
+          <p class="names-translit">{{ namesCurrent.transliteration }}</p>
+          <p class="names-english">{{ namesCurrent.english }}</p>
+        </div>
+        <div class="names-controls">
+          <button class="btn-secondary" birr:on:click="namesPrev()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Prev
+          </button>
+          <button class="btn-primary" birr:on:click="namesRandom()">Random</button>
+          <button class="btn-secondary" birr:on:click="namesNext()">
+            Next
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p class="names-count">Reciting all 99 names is a path to Paradise, insha'Allah. (Sahih al-Bukhari 2736)</p>
+      </div>
+
+      <!-- ZAKAT APP -->
+      <div birr:if="activeApp === 'zakat'" class="app-content app-zakat">
+        <p class="zakat-intro">Zakat is 2.5% of qualifying wealth held for one lunar year, due when net wealth exceeds the nisab.</p>
+        <label class="zakat-field">
+          <span>Cash &amp; bank balances</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputCash" birr:on:input="onZakatInput('cash', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Gold held (grams)</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputGold" birr:on:input="onZakatInput('gold', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Silver held (grams)</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputSilver" birr:on:input="onZakatInput('silver', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Investments (stocks, funds)</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputInvestments" birr:on:input="onZakatInput('investments', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Receivables (money owed to you)</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputReceivables" birr:on:input="onZakatInput('receivables', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Trade inventory</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputInventory" birr:on:input="onZakatInput('inventory', $event)"/>
+        </label>
+        <label class="zakat-field">
+          <span>Liabilities (debts due within a year)</span>
+          <input type="number" min="0" step="0.01" birr:bind:value="zakatInputLiabilities" birr:on:input="onZakatInput('liabilities', $event)"/>
+        </label>
+        <button class="btn-primary zakat-calc-btn" birr:on:click="calculateZakat()">Calculate Zakat</button>
+        <div birr:if="zakatResult !== null" class="zakat-result">
+          <div class="zakat-result-row"><span>Total assets</span><span>{{ zakatResultDisplay.totalAssets }}</span></div>
+          <div class="zakat-result-row"><span>Liabilities</span><span>{{ zakatResultDisplay.totalLiabilities }}</span></div>
+          <div class="zakat-result-row"><span>Net wealth</span><span>{{ zakatResultDisplay.netWealth }}</span></div>
+          <div class="zakat-result-row"><span>Nisab (silver equivalent)</span><span>{{ zakatResultDisplay.nisabSilver }}</span></div>
+          <div birr:if="zakatResult.isAboveNisab" class="zakat-due">
+            <span>Zakat Due (2.5%)</span>
+            <span class="zakat-due-amount">{{ zakatResultDisplay.zakatDue }}</span>
+          </div>
+          <p birr:if="zakatResult.isAboveNisab === false" class="zakat-below">Your wealth is below the nisab threshold. No zakat is due, but sadaqah is always encouraged.</p>
+        </div>
+      </div>
+
+      <!-- =================== KNOWLEDGE =================== -->
+
+      <!-- HIJRI CALENDAR APP -->
+      <div birr:if="activeApp === 'hijri'" class="app-content app-hijri">
+        <div class="hijri-month-nav">
+          <button class="btn-icon" birr:on:click="hijriPrevMonth()" aria-label="Previous month">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="hijri-month-title">
+            <div class="hijri-gregorian">{{ hijriMonthLabelGregorian }}</div>
+            <div class="hijri-islamic">{{ hijriMonthLabelIslamic }}</div>
+          </div>
+          <button class="btn-icon" birr:on:click="hijriNextMonth()" aria-label="Next month">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="hijri-weekdays">
+          <span birr:for="w in hijriWeekdays" birr:key="w" class="hijri-weekday">{{ w }}</span>
+        </div>
+        <div class="hijri-grid">
+          <button birr:for="c in hijriCells" birr:key="c.key" class="hijri-cell {{ hijriCellClass(c) }}" birr:on:click="selectHijriDay(c)">
+            <span class="hijri-cell-greg">{{ c.gregorianDate.getDate() }}</span>
+            <span class="hijri-cell-hijri">{{ c.hijri.day }}</span>
+          </button>
+        </div>
+        <div birr:if="hijriSelectedCell !== null" class="hijri-selected-info">
+          <p class="hijri-selected-gregorian">{{ hijriSelectedGregorianLabel }}</p>
+          <p class="hijri-selected-islamic">{{ hijriSelectedIslamicLabel }}</p>
+        </div>
+        <p birr:if="hijriSelectedEvent !== null" class="hijri-selected-event">{{ hijriSelectedEvent.name }} — {{ hijriSelectedEvent.description }}</p>
+      </div>
+
+      <!-- ISLAMIC EVENTS APP -->
+      <div birr:if="activeApp === 'events'" class="app-content app-events">
+        <p class="events-intro">Significant dates in the Hijri calendar. Hijri dates shift ~11 days earlier each Gregorian year.</p>
+        <div birr:for="e in eventsList" birr:key="e.id" class="event-card">
+          <div class="event-date">
+            <span class="event-day">{{ e.hijriDay }}</span>
+            <span class="event-month">{{ eventMonthName(e.hijriMonth) }}</span>
+          </div>
+          <div class="event-body">
+            <h3 class="event-name">{{ e.name }}</h3>
+            <p class="event-arabic" dir="rtl">{{ e.arabicName }}</p>
+            <p class="event-desc">{{ e.description }}</p>
+            <span class="event-cat event-cat-{{ e.category }}">{{ e.category }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIBRARY APP -->
+      <div birr:if="activeApp === 'library'" class="app-content app-library">
+        <div class="library-cats">
+          <button birr:for="c in libraryCats" birr:key="c.id" class="library-cat {{ libraryCatActiveClass(c.id) }}" birr:on:click="setLibraryCat(c.id)">{{ c.name }}</button>
+        </div>
+        <div birr:if="librarySelected === null" class="library-list">
+          <button birr:for="b in libraryFiltered" birr:key="b.id" class="book-card" birr:on:click="selectBook(b.id)">
+            <h3 class="book-title">{{ b.title }}</h3>
+            <p class="book-author">{{ b.author }}</p>
+            <p class="book-meta">{{ b.year }} · {{ b.pages }} pp · {{ b.language }}</p>
+            <div class="book-rating">
+              <svg birr:for="r in bookStars(b.rating)" birr:key="r" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+            </div>
+          </button>
+        </div>
+        <div birr:if="librarySelected !== null" class="book-detail">
+          <button class="btn-secondary" birr:on:click="closeBook()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            All Books
+          </button>
+          <h3 class="book-detail-title">{{ librarySelected.title }}</h3>
+          <p class="book-detail-author">{{ librarySelected.author }}</p>
+          <p class="book-detail-meta">{{ librarySelected.year }} · {{ librarySelected.pages }} pages · {{ librarySelected.language }}</p>
+          <p class="book-detail-desc">{{ librarySelected.description }}</p>
+        </div>
+      </div>
+
+      <!-- =================== TOOLS =================== -->
+
+      <!-- COMPASS APP -->
+      <div birr:if="activeApp === 'compass'" class="app-content app-compass">
+        <div class="compass-dial" style="transform: rotate({{ compassDialRotation }}deg)">
+          <svg width="240" height="240" viewBox="0 0 240 240">
+            <circle cx="120" cy="120" r="110" fill="none" stroke="var(--border)" stroke-width="2"/>
+            <circle cx="120" cy="120" r="90" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,4"/>
+            <polygon points="120,30 110,120 130,120" fill="var(--accent)"/>
+            <polygon points="120,210 110,120 130,120" fill="var(--muted)"/>
+            <text x="120" y="28" text-anchor="middle" font-size="20" font-weight="bold" fill="var(--accent)">N</text>
+            <text x="120" y="226" text-anchor="middle" font-size="20" fill="var(--muted)">S</text>
+            <text x="218" y="127" text-anchor="middle" font-size="20" fill="var(--muted)">E</text>
+            <text x="22" y="127" text-anchor="middle" font-size="20" fill="var(--muted)">W</text>
+            <circle cx="120" cy="120" r="6" fill="var(--primary)"/>
+          </svg>
+        </div>
+        <p class="compass-heading">Heading: <strong>{{ compassHeadingLabel }}</strong></p>
+        <p birr:if="compassDirection !== ''" class="compass-direction">{{ compassDirection }}</p>
+        <button class="btn-primary" birr:on:click="calibrateCompass()">Enable Live Compass</button>
+        <p birr:if="compassStatus !== ''" class="compass-status">{{ compassStatus }}</p>
+      </div>
+
+      <!-- CALCULATOR APP -->
+      <div birr:if="activeApp === 'calculator'" class="app-content app-calc">
+        <div class="calc-display">
+          <div class="calc-expression">{{ calcExpression }}</div>
+          <div class="calc-current">{{ calcDisplay }}</div>
+        </div>
+        <div class="calc-grid">
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('C')">C</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('±')">±</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('%')">%</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('/')">÷</button>
+          <button class="calc-btn" birr:on:click="calcInput('7')">7</button>
+          <button class="calc-btn" birr:on:click="calcInput('8')">8</button>
+          <button class="calc-btn" birr:on:click="calcInput('9')">9</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('*')">×</button>
+          <button class="calc-btn" birr:on:click="calcInput('4')">4</button>
+          <button class="calc-btn" birr:on:click="calcInput('5')">5</button>
+          <button class="calc-btn" birr:on:click="calcInput('6')">6</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('-')">−</button>
+          <button class="calc-btn" birr:on:click="calcInput('1')">1</button>
+          <button class="calc-btn" birr:on:click="calcInput('2')">2</button>
+          <button class="calc-btn" birr:on:click="calcInput('3')">3</button>
+          <button class="calc-btn calc-btn-op" birr:on:click="calcInput('+')">+</button>
+          <button class="calc-btn calc-btn-zero" birr:on:click="calcInput('0')">0</button>
+          <button class="calc-btn" birr:on:click="calcInput('.')">.</button>
+          <button class="calc-btn calc-btn-eq" birr:on:click="calcInput('=')">=</button>
+        </div>
+      </div>
+
+      <!-- NOTES APP -->
+      <div birr:if="activeApp === 'notes'" class="app-content app-notes">
+        <div class="notes-new">
+          <input class="notes-input" type="text" placeholder="Note title (optional)" birr:bind:value="notesNewTitle" birr:on:input="onNotesTitleInput($event)"/>
+          <textarea class="notes-textarea" placeholder="Write your note here…" birr:on:input="onNotesBodyInput($event)">{{ notesNewBody }}</textarea>
+          <div class="notes-color-row">
+            <span class="notes-color-label">Color:</span>
+            <button birr:for="c in noteColors" birr:key="c" class="notes-color-swatch {{ notesColorActiveClass(c) }}" style="background: {{ c }}" birr:on:click="setNotesColor(c)" aria-label="Set color"></button>
+          </div>
+          <button class="btn-primary" birr:on:click="addNote()">Add Note</button>
+        </div>
+        <p birr:if="notesList.length === 0" class="empty-text">No notes yet. Add your first note above.</p>
+        <div birr:for="n in notesList" birr:key="n.id" class="note-item" style="border-left-color: {{ n.color }}">
+          <div class="note-item-head">
+            <h3 class="note-item-title">{{ n.title || 'Untitled' }}</h3>
+            <button class="note-delete" birr:on:click="deleteNote(n.id)" aria-label="Delete note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <p class="note-item-body">{{ n.body }}</p>
+          <p class="note-item-date">{{ notesDateFormat(n.updatedAt) }}</p>
+        </div>
+      </div>
+
+      <!-- REMINDERS APP -->
+      <div birr:if="activeApp === 'reminders'" class="app-content app-reminders">
+        <div class="reminders-new">
+          <input class="reminders-input" type="text" placeholder="Reminder (e.g. Read Quran)" birr:bind:value="remindersNewText" birr:on:input="onRemindersTextInput($event)"/>
+          <input class="reminders-time" type="time" birr:bind:value="remindersNewTime" birr:on:input="onRemindersTimeInput($event)"/>
+          <button class="btn-primary" birr:on:click="addReminder()">Add Reminder</button>
+        </div>
+        <p birr:if="remindersList.length === 0" class="empty-text">No reminders set.</p>
+        <div birr:for="r in remindersSorted" birr:key="r.id" class="reminder-item">
+          <div class="reminder-time">{{ r.time }}</div>
+          <div class="reminder-body">
+            <p class="reminder-text">{{ r.text }}</p>
+            <p birr:if="r.snoozed" class="reminder-snoozed">Snoozed until {{ r.snoozed }}</p>
+          </div>
+          <div class="reminder-actions">
+            <button class="btn-icon" birr:on:click="snoozeReminder(r.id)" aria-label="Snooze 10 min">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="btn-icon" birr:on:click="deleteReminder(r.id)" aria-label="Delete reminder">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <p birr:if="remindersNotificationSupported" class="reminders-hint">Notifications enabled. You'll be alerted when reminders are due (while the app is open).</p>
+      </div>
+
+      <!-- TIMER APP -->
+      <div birr:if="activeApp === 'timer'" class="app-content app-timer">
+        <div class="timer-display">{{ timerDisplay }}</div>
+        <div birr:if="timerRunning === false && timerRemaining === timerDuration" class="timer-presets">
+          <button class="btn-secondary" birr:on:click="setTimerPreset(5)">5 min</button>
+          <button class="btn-secondary" birr:on:click="setTimerPreset(10)">10 min</button>
+          <button class="btn-secondary" birr:on:click="setTimerPreset(15)">15 min</button>
+          <button class="btn-secondary" birr:on:click="setTimerPreset(30)">30 min</button>
+        </div>
+        <div birr:if="timerRunning === false && timerRemaining === timerDuration" class="timer-custom">
+          <label class="timer-input-row">
+            <span>Minutes</span>
+            <input type="number" min="0" max="999" birr:bind:value="timerCustomMinutes" birr:on:input="onTimerMinutesInput($event)"/>
+          </label>
+          <label class="timer-input-row">
+            <span>Seconds</span>
+            <input type="number" min="0" max="59" birr:bind:value="timerCustomSeconds" birr:on:input="onTimerSecondsInput($event)"/>
+          </label>
+          <button class="btn-secondary" birr:on:click="setTimerCustom()">Apply</button>
+        </div>
+        <div class="timer-controls">
+          <button birr:if="timerRunning === false" class="btn-primary" birr:on:click="startTimer()">Start</button>
+          <button birr:if="timerRunning" class="btn-primary" birr:on:click="pauseTimer()">Pause</button>
+          <button class="btn-secondary" birr:on:click="resetTimer()">Reset</button>
+        </div>
+        <p birr:if="timerFinished" class="timer-finished">Timer complete!</p>
+      </div>
+
+      <!-- FLASHLIGHT APP -->
+      <div birr:if="activeApp === 'flashlight'" class="app-content app-flashlight">
+        <div class="flashlight-state">
+          <button class="flashlight-toggle {{ flashlightOn ? 'flashlight-on' : 'flashlight-off' }}" birr:on:click="toggleFlashlight()">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <p class="flashlight-state-label">{{ flashlightOn ? 'ON' : 'OFF' }}</p>
+        </div>
+        <div birr:if="flashlightOn" class="flashlight-brightness">
+          <label>Brightness: {{ flashlightBrightness }}%</label>
+          <input type="range" min="20" max="100" value="{{ flashlightBrightness }}" birr:on:input="onFlashlightBrightness($event)"/>
+        </div>
+        <p class="flashlight-hint">Tap the toggle to illuminate your screen as a torch. Brightness slider lets you dim for nighttime reading.</p>
+      </div>
+
+      <!-- WEATHER APP -->
+      <div birr:if="activeApp === 'weather'" class="app-content app-weather">
+        <p birr:if="weatherLoading" class="loading-text">Loading weather…</p>
+        <p birr:if="weatherError" class="error-text">{{ weatherError }}</p>
+        <div birr:if="weatherData !== null" class="weather-current">
+          <div class="weather-temp">{{ weatherData.current.temperature }}°C</div>
+          <div class="weather-desc">{{ weatherData.current.description }}</div>
+          <div class="weather-feels">Feels like {{ weatherData.current.apparentTemperature }}°C</div>
+          <div class="weather-meta">
+            <span>Humidity: {{ weatherData.current.humidity }}%</span>
+            <span>Wind: {{ weatherData.current.windspeed }} km/h</span>
+          </div>
+          <div class="weather-timezone">{{ weatherData.timezone }}</div>
+        </div>
+        <div birr:if="weatherData !== null" class="weather-forecast">
+          <h3 class="weather-forecast-title">5-Day Forecast</h3>
+          <div birr:for="d in weatherData.daily" birr:key="d.date" class="forecast-row">
+            <span class="forecast-day">{{ weatherDayLabel(d.date) }}</span>
+            <span class="forecast-desc">{{ d.description }}</span>
+            <span class="forecast-temps">{{ d.tempMax }}° / {{ d.tempMin }}°</span>
+          </div>
+        </div>
+        <button class="btn-secondary" birr:on:click="refreshWeather()">Refresh</button>
+      </div>
+
+      <!-- AUDIO PLAYER APP -->
+      <div birr:if="activeApp === 'audio'" class="app-content app-audio">
+        <div class="audio-now-playing">
+          <div class="audio-art">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none"><path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="audio-info">
+            <h3 class="audio-title">{{ audioCurrent.title }}</h3>
+            <p class="audio-reciter">{{ audioCurrent.reciter }}</p>
+          </div>
+        </div>
+        <div class="audio-progress">
+          <div class="audio-progress-bar">
+            <div class="audio-progress-fill" style="width: {{ audioProgress }}%"></div>
+          </div>
+          <div class="audio-time">
+            <span>{{ audioCurrentTimeLabel }}</span>
+            <span>{{ audioDurationLabel }}</span>
+          </div>
+        </div>
+        <div class="audio-controls">
+          <button class="btn-icon" birr:on:click="audioPrev()" aria-label="Previous">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14l-9-7 9-7zM5 5h2v14H5V5z"/></svg>
+          </button>
+          <button birr:if="audioPlaying === false" class="audio-play-btn" birr:on:click="audioPlay()" aria-label="Play">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+          </button>
+          <button birr:if="audioPlaying" class="audio-play-btn" birr:on:click="audioPause()" aria-label="Pause">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+          </button>
+          <button class="btn-icon" birr:on:click="audioNext()" aria-label="Next">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5l9 7-9 7V5zm12 0h2v14h-2V5z"/></svg>
+          </button>
+        </div>
+        <div class="audio-playlist">
+          <h4 class="audio-playlist-title">Recitations (Surah Audio)</h4>
+          <button birr:for="t in audioTracks" birr:key="t.id" class="audio-track {{ audioTrackActiveClass(t.id) }}" birr:on:click="audioSelect(t.id)">
+            <span class="audio-track-num">{{ t.shortId }}</span>
+            <span class="audio-track-name">{{ t.title }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =================== LIFESTYLE =================== -->
+
+      <!-- MOSQUE FINDER APP -->
+      <div birr:if="activeApp === 'mosque'" class="app-content app-mosque">
+        <div class="places-header">
+          <p class="places-intro">Mosques within {{ mosqueRadius }} km of your location.</p>
+          <select class="places-select" birr:on:change="onMosqueRadiusChange($event)">
+            <option value="2">2 km</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+          </select>
+          <button class="btn-primary" birr:on:click="refreshMosques()">Find Mosques</button>
+        </div>
+        <p birr:if="mosqueLoading" class="loading-text">Searching nearby mosques…</p>
+        <p birr:if="mosqueError" class="error-text">{{ mosqueError }}</p>
+        <p birr:if="mosqueList.length === 0 && mosqueLoading === false && mosqueError === ''" class="empty-text">No mosques found nearby. Try increasing the radius.</p>
+        <div birr:for="m in mosqueList" birr:key="m.id" class="place-item">
+          <div class="place-distance">{{ m.distanceKm.toFixed(2) }} km</div>
+          <div class="place-body">
+            <h3 class="place-name">{{ m.name }}</h3>
+            <p birr:if="m.address" class="place-address">{{ m.address }}</p>
+          </div>
+          <a class="place-directions" target="_blank" rel="noopener" href="{{ placeDirectionsUrl(m) }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.553 2.776A1 1 0 0022 18.882V8.118a1 1 0 00-1.447-.894L15 10m0 7V7m0 0L9 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- HALAL FOOD APP -->
+      <div birr:if="activeApp === 'halal'" class="app-content app-halal">
+        <div class="places-header">
+          <p class="places-intro">Halal restaurants within {{ halalRadius }} km of your location.</p>
+          <select class="places-select" birr:on:change="onHalalRadiusChange($event)">
+            <option value="2">2 km</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+          </select>
+          <button class="btn-primary" birr:on:click="refreshHalal()">Find Halal Food</button>
+        </div>
+        <p birr:if="halalLoading" class="loading-text">Searching nearby halal food…</p>
+        <p birr:if="halalError" class="error-text">{{ halalError }}</p>
+        <p birr:if="halalList.length === 0 && halalLoading === false && halalError === ''" class="empty-text">No halal restaurants found nearby. Try increasing the radius.</p>
+        <div birr:for="hl in halalList" birr:key="hl.id" class="place-item">
+          <div class="place-distance">{{ hl.distanceKm.toFixed(2) }} km</div>
+          <div class="place-body">
+            <h3 class="place-name">{{ hl.name }}</h3>
+            <p class="place-type">{{ hl.type }}</p>
+            <p birr:if="hl.address" class="place-address">{{ hl.address }}</p>
+          </div>
+          <a class="place-directions" target="_blank" rel="noopener" href="{{ placeDirectionsUrl(hl) }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.553 2.776A1 1 0 0022 18.882V8.118a1 1 0 00-1.447-.894L15 10m0 7V7m0 0L9 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- SETTINGS APP -->
+      <div birr:if="activeApp === 'settings'" class="app-content app-settings">
+        <section class="settings-section">
+          <h3 class="settings-section-title">Appearance</h3>
+          <div class="settings-row">
+            <span>Theme</span>
+            <button class="settings-toggle" birr:on:click="toggleTheme">
+              <span birr:if="isLight">Light</span>
+              <span birr:if="isDark">Dark</span>
+              <svg birr:if="isLight" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg birr:if="isDark" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="settings-row">
+            <span>Font size</span>
+            <div class="settings-font-row">
+              <button class="btn-secondary {{ settingsFontClass('small') }}" birr:on:click="setFontSize('small')">Small</button>
+              <button class="btn-secondary {{ settingsFontClass('medium') }}" birr:on:click="setFontSize('medium')">Medium</button>
+              <button class="btn-secondary {{ settingsFontClass('large') }}" birr:on:click="setFontSize('large')">Large</button>
+            </div>
+          </div>
+        </section>
+        <section class="settings-section">
+          <h3 class="settings-section-title">Data</h3>
+          <p class="settings-data-info">{{ favoritesCount }} favorites · {{ notesCount }} notes · {{ remindersCount }} reminders</p>
+          <button class="btn-secondary settings-danger" birr:on:click="clearAllData()">Clear All Local Data</button>
+        </section>
+        <section class="settings-section">
+          <h3 class="settings-section-title">About MuslimOS</h3>
+          <p class="settings-about-text">MuslimOS — a launcher for practical daily Muslim life. Built with BirrStack.</p>
+          <p class="settings-version">Version 0.1.0 · BismiLLAH Ar-Rahman Ar-Raheem</p>
+          <p class="settings-credits">Quran data: alquran.cloud · Weather: Open-Meteo · Places: OpenStreetMap</p>
+        </section>
+      </div>
+
+      <!-- =================== SOCIAL =================== -->
+
+      <!-- COMMUNITY APP -->
+      <div birr:if="activeApp === 'community'" class="app-content app-community">
+        <div class="community-new">
+          <textarea class="community-input" placeholder="Share a beneficial reminder, ayah, or reflection…" birr:on:input="onCommunityInput($event)">{{ communityNewText }}</textarea>
+          <button class="btn-primary" birr:on:click="addCommunityPost()">Post</button>
+        </div>
+        <p birr:if="communityPosts.length === 0" class="empty-text">No posts yet. Be the first to share something beneficial.</p>
+        <div birr:for="p in communityPosts" birr:key="p.id" class="community-post">
+          <div class="community-post-head">
+            <div class="community-avatar">{{ communityInitial(p) }}</div>
+            <div>
+              <p class="community-author">{{ p.author }}</p>
+              <p class="community-date">{{ communityDateFormat(p.createdAt) }}</p>
+            </div>
+          </div>
+          <p class="community-text">{{ p.text }}</p>
+          <div class="community-actions">
+            <button class="community-action {{ p.liked ? 'community-liked' : '' }}" birr:on:click="likeCommunityPost(p.id)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              {{ p.likes }}
+            </button>
+            <button class="community-action" birr:on:click="deleteCommunityPost(p.id)" aria-label="Delete post">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAVORITES APP -->
+      <div birr:if="activeApp === 'favorites'" class="app-content app-favorites">
+        <p birr:if="favoritesList.length === 0" class="empty-text">No favorites yet. Tap the star icon on any dua to save it here for quick access.</p>
+        <div birr:for="f in favoritesList" birr:key="f.id" class="favorite-item">
+          <div class="favorite-type">{{ f.type }}</div>
+          <div class="favorite-body">
+            <h3 class="favorite-title">{{ f.title }}</h3>
+            <p birr:if="f.subtitle" class="favorite-subtitle">{{ f.subtitle }}</p>
+          </div>
+          <button class="btn-icon" birr:on:click="removeFavorite(f.id)" aria-label="Remove favorite">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <button birr:if="favoritesList.length > 0" class="btn-secondary" birr:on:click="clearFavorites()">Clear All</button>
+      </div>
+
     </div>
   </div>
 </template>
@@ -73,6 +728,20 @@ import { signal, computed, effect } from 'birrstack-core';
 import { APPS, CATEGORIES } from './data/apps';
 import { getThemeSignal, toggleTheme } from './lib/theme';
 import { getPrayerTimes, getHijriDate } from './data/prayer';
+import { fetchSurahIndex, fetchSurah, getSurahAudioUrl } from './lib/quran';
+import { HADITH_COLLECTIONS } from './data/hadith';
+import { DUAS, DUA_CATEGORIES } from './data/duas';
+import { NAMES_99 } from './data/names99';
+import { ISLAMIC_EVENTS, HIJRI_MONTHS } from './data/events';
+import { LIBRARY_BOOKS, LIBRARY_CATEGORIES } from './data/library';
+import { loadJSON, saveJSON, clearAll as clearStorage } from './lib/storage';
+import { loadNotes, saveNote, deleteNote as deleteNoteStore } from './lib/notes';
+import { qiblaBearing, qiblaDistance, alphaToHeading, requestOrientationPermission, KAABA_LAT, KAABA_LNG } from './lib/qibla';
+import { calculateZakat as calcZakat, formatMoney, GOLD_PRICE_PER_GRAM_USD, SILVER_PRICE_PER_GRAM_USD } from './lib/zakat';
+import { getCoords } from './lib/weather';
+import { fetchWeather } from './lib/weather';
+import { findMosques, findHalal } from './lib/places';
+import { toHijri, formatHijriLong, buildGregorianMonth, WEEKDAYS_SHORT, GREGORIAN_MONTHS, HIJRI_MONTHS as HIJRI_MONTHS_LIB, HIJRI_MONTHS_AR } from './lib/hijri';
 
 export default {
   setup() {
@@ -91,13 +760,31 @@ export default {
     const categories = CATEGORIES;
     const filteredApps = computed(() => APPS.filter(a => a.category === activeCategory.value));
 
-    function activeCategoryClass(catId) {
-      return activeCategory.value === catId ? 'cat-active' : '';
-    }
+    function activeCategoryClass(catId) { return activeCategory.value === catId ? 'cat-active' : ''; }
     function setCategory(catId) { activeCategory.value = catId; }
 
-    function openApp(appId) { activeApp.value = appId; }
-    function closeApp() { activeApp.value = null; }
+    function openApp(appId) {
+      activeApp.value = appId;
+      // App-specific initial loads
+      if (appId === 'quran' && quranSurahList.value.length === 0) loadQuranIndex();
+      if (appId === 'prayer') refreshPrayerTimes();
+      if (appId === 'qibla') initQibla();
+      if (appId === 'tasbih') loadTasbih();
+      if (appId === 'weather') refreshWeather();
+      if (appId === 'mosque') refreshMosques();
+      if (appId === 'halal') refreshHalal();
+      if (appId === 'compass') initCompass();
+      if (appId === 'timer') initTimer();
+      if (appId === 'audio') initAudio();
+      if (appId === 'notes') loadNotesList();
+      if (appId === 'reminders') loadReminders();
+      if (appId === 'community') loadCommunity();
+      if (appId === 'favorites') loadFavorites();
+      if (appId === 'hijri') loadHijriCalendar();
+      if (appId === 'names') loadNames();
+      if (appId === 'settings') loadSettingsCounts();
+    }
+    function closeApp() { activeApp.value = null; stopAudio(); stopTimer(); stopCompass(); stopQiblaOrientation(); }
 
     // Clock
     const now = signal(new Date());
@@ -110,8 +797,6 @@ export default {
       const h12 = h % 12 || 12;
       return `${h12}:${m} ${ampm}`;
     });
-
-    // Greeting
     const greeting = computed(() => {
       const h = now.value.getHours();
       if (h < 12) return 'Good morning';
@@ -120,7 +805,6 @@ export default {
       return 'Good night';
     });
 
-    // Hijri date
     const hijriDate = signal('');
     async function updateHijriDate() {
       try { hijriDate.value = await getHijriDate(); }
@@ -140,7 +824,6 @@ export default {
       try {
         const pt = await getPrayerTimes();
         prayerTimes.value = pt;
-        // Find next prayer
         const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
         const times = [pt.fajr, pt.dhuhr, pt.asr, pt.maghrib, pt.isha];
         const current = new Date();
@@ -158,7 +841,6 @@ export default {
             return;
           }
         }
-        // Next prayer is Fajr tomorrow
         nextPrayerName.value = 'Fajr';
         nextPrayerTime.value = pt.fajr;
         prayerCountdown.value = 'tomorrow';
@@ -166,20 +848,843 @@ export default {
     }
     loadPrayerTimes();
     setInterval(loadPrayerTimes, 60000);
+    function refreshPrayerTimes() { loadPrayerTimes(); }
+
+    // ============== QURAN APP ==============
+    const quranSurahList = signal([]);
+    const quranCurrentSurah = signal(null);
+    const quranCurrentSurahMeta = signal({ englishName: '', englishNameTranslation: '', numberOfAyahs: 0, revelationType: '' });
+    const quranVerses = signal([]);
+    const quranLoading = signal(false);
+    const quranError = signal('');
+
+    async function loadQuranIndex() {
+      if (quranSurahList.value.length > 0) return;
+      quranLoading.value = true;
+      try {
+        const list = await fetchSurahIndex();
+        quranSurahList.value = list;
+      } finally { quranLoading.value = false; }
+    }
+
+    async function openSurah(n) {
+      quranCurrentSurah.value = n;
+      const meta = quranSurahList.value.find(s => s.number === n);
+      quranCurrentSurahMeta.value = meta || { englishName: '', englishNameTranslation: '', numberOfAyahs: 0, revelationType: '' };
+      quranVerses.value = [];
+      quranLoading.value = true;
+      quranError.value = '';
+      try {
+        const surah = await fetchSurah(n);
+        if (surah) {
+          quranVerses.value = surah.verses;
+        } else {
+          quranError.value = 'Could not load this surah. Please check your internet connection.';
+        }
+      } catch (e) {
+        quranError.value = 'Error loading surah: ' + (e.message || String(e));
+      } finally { quranLoading.value = false; }
+    }
+    function closeSurah() {
+      quranCurrentSurah.value = null;
+      quranVerses.value = [];
+      quranError.value = '';
+      stopAudio();
+    }
+    function playSurahAudio(n) {
+      const url = getSurahAudioUrl(n);
+      // Use audio player for playback
+      const track = { id: 'surah-' + n, title: quranCurrentSurahMeta.value.englishName || ('Surah ' + n), reciter: 'Mishary Alafasy', url, shortId: String(n) };
+      audioTracks.value = [track, ...audioTracks.value.filter(t => t.id !== track.id)];
+      audioCurrent.value = track;
+      audioSelect(track.id);
+    }
+
+    // ============== HADITH APP ==============
+    const hadithCollection = HADITH_COLLECTIONS[0];
+    const hadithList = signal(hadithCollection ? hadithCollection.hadiths : []);
+
+    // ============== TASBIH APP ==============
+    const tasbihPresets = [
+      { id: 'subhanallah', name: 'SubhanAllah', arabic: 'سُبْحَانَ اللَّهِ', transliteration: 'SubhanAllah', target: 33 },
+      { id: 'alhamdulillah', name: 'Alhamdulillah', arabic: 'الْحَمْدُ لِلَّهِ', transliteration: 'Alhamdulillah', target: 33 },
+      { id: 'allahuakbar', name: 'Allahu Akbar', arabic: 'اللَّهُ أَكْبَرُ', transliteration: 'Allahu Akbar', target: 34 },
+      { id: 'istighfar', name: 'Astaghfirullah', arabic: 'أَسْتَغْفِرُ اللَّهَ', transliteration: 'Astaghfirullah', target: 100 },
+      { id: 'shahada', name: 'Shahada', arabic: 'لَا إِلَهَ إِلَّا اللَّهُ', transliteration: 'La ilaha illa Allah', target: 100 },
+    ];
+    const tasbihPresetId = signal('subhanallah');
+    const tasbihCount = signal(0);
+    const tasbihTotal = signal(0);
+    const tasbihCurrentDhikr = computed(() => {
+      const p = tasbihPresets.find(x => x.id === tasbihPresetId.value);
+      return p || tasbihPresets[0];
+    });
+    const tasbihTarget = computed(() => tasbihCurrentDhikr.value.target);
+    const tasbihProgress = computed(() => tasbihTarget.value > 0 ? Math.min(100, Math.round((tasbihCount.value / tasbihTarget.value) * 100)) : 0);
+
+    function loadTasbih() {
+      const saved = loadJSON('tasbih', { count: 0, total: 0, preset: 'subhanallah' });
+      tasbihCount.value = saved.count || 0;
+      tasbihTotal.value = saved.total || 0;
+      tasbihPresetId.value = saved.preset || 'subhanallah';
+    }
+    function saveTasbih() {
+      saveJSON('tasbih', { count: tasbihCount.value, total: tasbihTotal.value, preset: tasbihPresetId.value });
+    }
+    function setTasbihPreset(id) {
+      tasbihPresetId.value = id;
+      tasbihCount.value = 0;
+      saveTasbih();
+    }
+    function tasbihPresetActiveClass(id) { return tasbihPresetId.value === id ? 'tasbih-preset-active' : ''; }
+    function tasbihIncrement() {
+      tasbihCount.value = tasbihCount.value + 1;
+      tasbihTotal.value = tasbihTotal.value + 1;
+      if (tasbihCount.value >= tasbihTarget.value) {
+        // Auto-reset on completion with a small buzz effect (visual only)
+        setTimeout(() => { tasbihCount.value = 0; }, 250);
+      }
+      saveTasbih();
+    }
+    function tasbihReset() { tasbihCount.value = 0; saveTasbih(); }
+    function tasbihResetTotal() { tasbihTotal.value = 0; tasbihCount.value = 0; saveTasbih(); }
+
+    // ============== QIBLA APP ==============
+    const qiblaBearingVal = signal(0);
+    const qiblaHeading = signal(null);
+    const qiblaDistanceVal = signal(0);
+    const qiblaOrientationSupported = signal(true);
+    const qiblaNeedleRotation = signal(0);
+    const qiblaCompassRotation = signal(0);
+    let qiblaOrientationHandler = null;
+
+    async function initQibla() {
+      const coords = await getCoords();
+      qiblaBearingVal.value = qiblaBearing(coords.lat, coords.lng);
+      qiblaDistanceVal.value = qiblaDistance(coords.lat, coords.lng);
+      // The needle always points "up" relative to North, which is the qibla bearing.
+      qiblaNeedleRotation.value = 0;
+      qiblaCompassRotation.value = 0;
+    }
+    async function calibrateQibla() {
+      const granted = await requestOrientationPermission();
+      if (!granted) { qiblaOrientationSupported.value = false; return; }
+      if (typeof window === 'undefined' || !window.DeviceOrientationEvent) {
+        qiblaOrientationSupported.value = false;
+        return;
+      }
+      if (qiblaOrientationHandler) stopQiblaOrientation();
+      qiblaOrientationHandler = (ev) => {
+        const heading = alphaToHeading(ev.alpha ?? null, ev.webkitCompassHeading ?? null);
+        if (heading !== null) {
+          qiblaHeading.value = heading;
+          // Rotate the compass dial so North aligns with the device's heading
+          qiblaCompassRotation.value = -heading;
+          // The needle (Ka'bah direction) is fixed at the qibla bearing from North
+          qiblaNeedleRotation.value = qiblaBearingVal.value;
+        }
+      };
+      window.addEventListener('deviceorientation', qiblaOrientationHandler);
+    }
+    function stopQiblaOrientation() {
+      if (qiblaOrientationHandler && typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientation', qiblaOrientationHandler);
+        qiblaOrientationHandler = null;
+      }
+    }
+
+    // ============== DUA APP ==============
+    const duaCategories = DUA_CATEGORIES;
+    const duaActiveCategory = signal('morning');
+    const duaFiltered = computed(() => DUAS.filter(d => d.category === duaActiveCategory.value));
+    function setDuaCategory(id) { duaActiveCategory.value = id; }
+    function duaCatActiveClass(id) { return duaActiveCategory.value === id ? 'dua-cat-active' : ''; }
+
+    // ============== 99 NAMES APP ==============
+    const namesIndex = signal(0);
+    const namesCurrent = computed(() => NAMES_99[namesIndex.value] || NAMES_99[0]);
+    function loadNames() { namesIndex.value = loadJSON('namesIndex', 0); saveNames(); }
+    function saveNames() { saveJSON('namesIndex', namesIndex.value); }
+    function namesNext() { namesIndex.value = (namesIndex.value + 1) % NAMES_99.length; saveNames(); }
+    function namesPrev() { namesIndex.value = (namesIndex.value - 1 + NAMES_99.length) % NAMES_99.length; saveNames(); }
+    function namesRandom() { namesIndex.value = Math.floor(Math.random() * NAMES_99.length); saveNames(); }
+
+    // ============== ZAKAT APP ==============
+    const zakatInputCash = signal(0);
+    const zakatInputGold = signal(0);
+    const zakatInputSilver = signal(0);
+    const zakatInputInvestments = signal(0);
+    const zakatInputReceivables = signal(0);
+    const zakatInputInventory = signal(0);
+    const zakatInputLiabilities = signal(0);
+    const zakatResult = signal(null);
+    const zakatResultDisplay = computed(() => {
+      if (!zakatResult.value) return { totalAssets: '', totalLiabilities: '', netWealth: '', nisabSilver: '', zakatDue: '' };
+      const r = zakatResult.value;
+      return {
+        totalAssets: formatMoney(r.totalAssets),
+        totalLiabilities: formatMoney(r.totalLiabilities),
+        netWealth: formatMoney(r.netWealth),
+        nisabSilver: formatMoney(r.nisabSilver),
+        zakatDue: formatMoney(r.zakatDue),
+      };
+    });
+    function onZakatInput(field, event) {
+      const v = parseFloat(event.target.value) || 0;
+      const map = { cash: zakatInputCash, gold: zakatInputGold, silver: zakatInputSilver, investments: zakatInputInvestments, receivables: zakatInputReceivables, inventory: zakatInputInventory, liabilities: zakatInputLiabilities };
+      if (map[field]) map[field].value = v;
+    }
+    function calculateZakat() {
+      zakatResult.value = calcZakat({
+        cash: zakatInputCash.value,
+        goldGrams: zakatInputGold.value,
+        silverGrams: zakatInputSilver.value,
+        investments: zakatInputInvestments.value,
+        receivables: zakatInputReceivables.value,
+        inventory: zakatInputInventory.value,
+        liabilities: zakatInputLiabilities.value,
+      }, GOLD_PRICE_PER_GRAM_USD, SILVER_PRICE_PER_GRAM_USD);
+    }
+
+    // ============== HIJRI CALENDAR APP ==============
+    const hijriViewDate = signal(new Date());
+    const hijriCells = signal([]);
+    const hijriSelectedCell = signal(null);
+    const hijriWeekdays = WEEKDAYS_SHORT;
+    const hijriMonthLabelGregorian = computed(() => {
+      const d = hijriViewDate.value;
+      return `${GREGORIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    });
+    const hijriMonthLabelIslamic = computed(() => {
+      const d = hijriViewDate.value;
+      const h = toHijri(d);
+      return `${HIJRI_MONTHS_AR[h.month - 1]} ${h.year} AH`;
+    });
+    const hijriSelectedGregorianLabel = computed(() => {
+      if (!hijriSelectedCell.value) return '';
+      const d = hijriSelectedCell.value.gregorianDate;
+      return d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    });
+    const hijriSelectedIslamicLabel = computed(() => {
+      if (!hijriSelectedCell.value) return '';
+      return formatHijriLong(hijriSelectedCell.value.gregorianDate);
+    });
+    const hijriSelectedEvent = computed(() => {
+      if (!hijriSelectedCell.value) return null;
+      const h = hijriSelectedCell.value.hijri;
+      return ISLAMIC_EVENTS.find(e => e.hijriDay === h.day && e.hijriMonth === h.month) || null;
+    });
+    function loadHijriCalendar() { rebuildHijriCalendar(); }
+    function rebuildHijriCalendar() {
+      const d = hijriViewDate.value;
+      const cells = buildGregorianMonth(d.getFullYear(), d.getMonth()).map(c => ({ ...c, key: c.gregorianDate.toISOString() }));
+      hijriCells.value = cells;
+    }
+    function hijriPrevMonth() {
+      const d = new Date(hijriViewDate.value);
+      d.setMonth(d.getMonth() - 1);
+      hijriViewDate.value = d;
+      rebuildHijriCalendar();
+    }
+    function hijriNextMonth() {
+      const d = new Date(hijriViewDate.value);
+      d.setMonth(d.getMonth() + 1);
+      hijriViewDate.value = d;
+      rebuildHijriCalendar();
+    }
+    function hijriCellClass(c) {
+      let cls = '';
+      if (!c.inMonth) cls += ' hijri-cell-outside';
+      if (c.isToday) cls += ' hijri-cell-today';
+      const ev = ISLAMIC_EVENTS.find(e => e.hijriDay === c.hijri.day && e.hijriMonth === c.hijri.month);
+      if (ev) cls += ' hijri-cell-event';
+      if (hijriSelectedCell.value && hijriSelectedCell.value.gregorianDate.toISOString() === c.gregorianDate.toISOString()) cls += ' hijri-cell-selected';
+      return cls.trim();
+    }
+    function selectHijriDay(c) { hijriSelectedCell.value = c; }
+
+    // ============== EVENTS APP ==============
+    const eventsList = ISLAMIC_EVENTS;
+    function eventMonthName(m) { return HIJRI_MONTHS[m - 1] || ''; }
+
+    // ============== LIBRARY APP ==============
+    const libraryCats = LIBRARY_CATEGORIES;
+    const libraryActiveCat = signal('all');
+    const libraryFiltered = computed(() => libraryActiveCat.value === 'all' ? LIBRARY_BOOKS : LIBRARY_BOOKS.filter(b => b.category === libraryActiveCat.value));
+    const librarySelected = signal(null);
+    function setLibraryCat(id) { libraryActiveCat.value = id; librarySelected.value = null; }
+    function libraryCatActiveClass(id) { return libraryActiveCat.value === id ? 'library-cat-active' : ''; }
+    function selectBook(id) { librarySelected.value = LIBRARY_BOOKS.find(b => b.id === id) || null; }
+    function closeBook() { librarySelected.value = null; }
+    function bookStars(n) { return Array.from({ length: n }, (_, i) => i); }
+
+    // ============== COMPASS APP ==============
+    const compassHeadingVal = signal(null);
+    const compassDialRotation = signal(0);
+    const compassStatus = signal('');
+    let compassHandler = null;
+    function initCompass() { compassStatus.value = ''; }
+    function compassHeadingLabel() { return compassHeadingVal.value !== null ? `${Math.round(compassHeadingVal.value)}°` : '—'; }
+    function compassDirection() {
+      const h = compassHeadingVal.value;
+      if (h === null) return '';
+      const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      return dirs[Math.round(h / 45) % 8];
+    }
+    async function calibrateCompass() {
+      const granted = await requestOrientationPermission();
+      if (!granted) { compassStatus.value = 'Permission denied'; return; }
+      if (typeof window === 'undefined' || !window.DeviceOrientationEvent) {
+        compassStatus.value = 'Device orientation not supported on this device.';
+        return;
+      }
+      if (compassHandler) stopCompass();
+      compassStatus.value = 'Live compass active';
+      compassHandler = (ev) => {
+        const heading = alphaToHeading(ev.alpha ?? null, ev.webkitCompassHeading ?? null);
+        if (heading !== null) {
+          compassHeadingVal.value = heading;
+          compassDialRotation.value = -heading;
+        }
+      };
+      window.addEventListener('deviceorientation', compassHandler);
+    }
+    function stopCompass() {
+      if (compassHandler && typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientation', compassHandler);
+        compassHandler = null;
+      }
+    }
+
+    // ============== CALCULATOR APP ==============
+    const calcDisplay = signal('0');
+    const calcExpression = signal('');
+    let calcResetNext = false;
+    function calcInput(key) {
+      const cur = calcDisplay.value;
+      if (key === 'C') { calcDisplay.value = '0'; calcExpression.value = ''; calcResetNext = false; return; }
+      if (key === '±') { calcDisplay.value = cur.startsWith('-') ? cur.slice(1) : '-' + cur; return; }
+      if (key === '%') { calcDisplay.value = String(parseFloat(cur) / 100); return; }
+      if (/[0-9]/.test(key)) {
+        if (cur === '0' || calcResetNext) { calcDisplay.value = key; calcResetNext = false; }
+        else { calcDisplay.value = cur + key; }
+        return;
+      }
+      if (key === '.') {
+        if (calcResetNext) { calcDisplay.value = '0.'; calcResetNext = false; return; }
+        if (!cur.includes('.')) calcDisplay.value = cur + '.';
+        return;
+      }
+      if (['+', '-', '*', '/'].includes(key)) {
+        const sym = key === '*' ? '×' : key === '/' ? '÷' : key;
+        calcExpression.value = `${cur} ${sym}`;
+        calcDisplay.value = cur;
+        calcResetNext = true;
+        // Store pending op
+        calcPendingOp = { op: key, left: parseFloat(cur) };
+        return;
+      }
+      if (key === '=') {
+        if (calcPendingOp) {
+          const right = parseFloat(cur);
+          let result = 0;
+          switch (calcPendingOp.op) {
+            case '+': result = calcPendingOp.left + right; break;
+            case '-': result = calcPendingOp.left - right; break;
+            case '*': result = calcPendingOp.left * right; break;
+            case '/': result = right === 0 ? NaN : calcPendingOp.left / right; break;
+          }
+          const display = isNaN(result) ? 'Error' : String(Math.round(result * 1e10) / 1e10);
+          calcDisplay.value = display;
+          calcExpression.value = `${calcPendingOp.left} ${calcPendingOp.op === '*' ? '×' : calcPendingOp.op === '/' ? '÷' : calcPendingOp.op} ${right} =`;
+          calcPendingOp = null;
+          calcResetNext = true;
+        }
+        return;
+      }
+    }
+    let calcPendingOp = null;
+
+    // ============== NOTES APP ==============
+    const noteColors = ['#05B34D', '#F2B91C', '#3498db', '#e74c3c', '#9b59b6', '#7f8c8d'];
+    const notesList = signal([]);
+    const notesNewTitle = signal('');
+    const notesNewBody = signal('');
+    const notesNewColor = signal('#05B34D');
+    async function loadNotesList() {
+      try {
+        notesList.value = await loadNotes();
+      } catch (e) { console.error('Notes load failed', e); }
+    }
+    function onNotesTitleInput(ev) { notesNewTitle.value = ev.target.value; }
+    function onNotesBodyInput(ev) { notesNewBody.value = ev.target.value; }
+    function setNotesColor(c) { notesNewColor.value = c; }
+    function notesColorActiveClass(c) { return notesNewColor.value === c ? 'notes-color-active' : ''; }
+    async function addNote() {
+      const body = notesNewBody.value.trim();
+      if (!body && !notesNewTitle.value.trim()) return;
+      const note = {
+        id: 'note-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        title: notesNewTitle.value.trim(),
+        body: body,
+        color: notesNewColor.value,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await saveNote(note);
+      notesList.value = [note, ...notesList.value];
+      notesNewTitle.value = '';
+      notesNewBody.value = '';
+    }
+    async function deleteNote(id) {
+      await deleteNoteStore(id);
+      notesList.value = notesList.value.filter(n => n.id !== id);
+    }
+    function notesDateFormat(ts) {
+      return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    // ============== REMINDERS APP ==============
+    const remindersList = signal([]);
+    const remindersNewText = signal('');
+    const remindersNewTime = signal('');
+    const remindersNotificationSupported = signal(typeof window !== 'undefined' && 'Notification' in window);
+    function loadReminders() {
+      remindersList.value = loadJSON('reminders', []);
+      if (remindersNotificationSupported.value && Notification.permission === 'default') {
+        try { Notification.requestPermission(); } catch {}
+      }
+    }
+    function onRemindersTextInput(ev) { remindersNewText.value = ev.target.value; }
+    function onRemindersTimeInput(ev) { remindersNewTime.value = ev.target.value; }
+    function addReminder() {
+      if (!remindersNewText.value.trim() || !remindersNewTime.value) return;
+      const r = { id: 'rem-' + Date.now(), text: remindersNewText.value.trim(), time: remindersNewTime.value, snoozed: null, createdAt: Date.now() };
+      remindersList.value = [r, ...remindersList.value];
+      saveJSON('reminders', remindersList.value);
+      remindersNewText.value = '';
+      remindersNewTime.value = '';
+    }
+    function deleteReminder(id) {
+      remindersList.value = remindersList.value.filter(r => r.id !== id);
+      saveJSON('reminders', remindersList.value);
+    }
+    function snoozeReminder(id) {
+      const list = remindersList.value.map(r => {
+        if (r.id === id) {
+          const d = new Date();
+          d.setMinutes(d.getMinutes() + 10);
+          return { ...r, snoozed: d.toTimeString().slice(0, 5) };
+        }
+        return r;
+      });
+      remindersList.value = list;
+      saveJSON('reminders', list);
+    }
+    const remindersSorted = computed(() => [...remindersList.value].sort((a, b) => (a.time || '').localeCompare(b.time || '')));
+
+    // Check for due reminders periodically
+    setInterval(() => {
+      const now = new Date();
+      const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      let changed = false;
+      for (const r of remindersList.value) {
+        if (r.snoozed) continue;
+        if (r.time === hhmm) {
+          try { new Notification('MuslimOS Reminder', { body: r.text }); } catch {}
+          r.snoozed = 'sent';
+          changed = true;
+        }
+      }
+      if (changed) saveJSON('reminders', remindersList.value);
+    }, 30000);
+
+    // ============== TIMER APP ==============
+    const timerDuration = signal(300);  // seconds
+    const timerRemaining = signal(300);
+    const timerRunning = signal(false);
+    const timerFinished = signal(false);
+    const timerCustomMinutes = signal(5);
+    const timerCustomSeconds = signal(0);
+    let timerInterval = null;
+    const timerDisplay = computed(() => {
+      const r = Math.max(0, timerRemaining.value);
+      const h = Math.floor(r / 3600);
+      const m = Math.floor((r % 3600) / 60);
+      const s = r % 60;
+      const mm = String(m).padStart(2, '0');
+      const ss = String(s).padStart(2, '0');
+      return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+    });
+    function initTimer() { /* nothing extra */ }
+    function setTimerPreset(min) {
+      timerDuration.value = min * 60;
+      timerRemaining.value = min * 60;
+      timerFinished.value = false;
+    }
+    function onTimerMinutesInput(ev) { timerCustomMinutes.value = parseInt(ev.target.value) || 0; }
+    function onTimerSecondsInput(ev) { timerCustomSeconds.value = parseInt(ev.target.value) || 0; }
+    function setTimerCustom() {
+      const total = Math.max(1, timerCustomMinutes.value * 60 + timerCustomSeconds.value);
+      timerDuration.value = total;
+      timerRemaining.value = total;
+      timerFinished.value = false;
+    }
+    function startTimer() {
+      if (timerRunning.value) return;
+      if (timerRemaining.value <= 0) { timerRemaining.value = timerDuration.value; timerFinished.value = false; }
+      timerRunning.value = true;
+      timerInterval = setInterval(() => {
+        timerRemaining.value = timerRemaining.value - 1;
+        if (timerRemaining.value <= 0) {
+          timerRemaining.value = 0;
+          timerRunning.value = false;
+          timerFinished.value = true;
+          stopTimer();
+          try { new Notification('MuslimOS Timer', { body: 'Timer complete!' }); } catch {}
+        }
+      }, 1000);
+    }
+    function pauseTimer() {
+      timerRunning.value = false;
+      stopTimer();
+    }
+    function resetTimer() {
+      stopTimer();
+      timerRemaining.value = timerDuration.value;
+      timerRunning.value = false;
+      timerFinished.value = false;
+    }
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    // ============== FLASHLIGHT APP ==============
+    const flashlightOn = signal(false);
+    const flashlightBrightness = signal(100);
+    let flashlightOverlay = null;
+    function toggleFlashlight() {
+      flashlightOn.value = !flashlightOn.value;
+      if (flashlightOn.value) {
+        if (!flashlightOverlay && typeof document !== 'undefined') {
+          flashlightOverlay = document.createElement('div');
+          flashlightOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;pointer-events:none;transition:opacity 0.2s;';
+          document.body.appendChild(flashlightOverlay);
+        }
+        if (flashlightOverlay) flashlightOverlay.style.opacity = '1';
+      } else {
+        if (flashlightOverlay) flashlightOverlay.style.opacity = '0';
+      }
+    }
+    function onFlashlightBrightness(ev) {
+      flashlightBrightness.value = parseInt(ev.target.value) || 100;
+      if (flashlightOverlay) {
+        flashlightOverlay.style.opacity = String(flashlightBrightness.value / 100);
+      }
+    }
+
+    // ============== WEATHER APP ==============
+    const weatherData = signal(null);
+    const weatherLoading = signal(false);
+    const weatherError = signal('');
+    async function refreshWeather() {
+      weatherLoading.value = true;
+      weatherError.value = '';
+      try {
+        const coords = await getCoords();
+        const w = await fetchWeather(coords);
+        weatherData.value = w;
+      } catch (e) {
+        weatherError.value = 'Could not load weather: ' + (e.message || String(e));
+      } finally { weatherLoading.value = false; }
+    }
+    function weatherDayLabel(iso) {
+      const d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+
+    // ============== AUDIO PLAYER APP ==============
+    const audioTracks = signal([
+      { id: 'surah-1',  shortId: '1',  title: 'Al-Fatiha (The Opening)',     reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/1.mp3' },
+      { id: 'surah-112', shortId: '112', title: 'Al-Ikhlas (Sincerity)',      reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/112.mp3' },
+      { id: 'surah-113', shortId: '113', title: 'Al-Falaq (The Daybreak)',    reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/113.mp3' },
+      { id: 'surah-114', shortId: '114', title: 'An-Nas (Mankind)',           reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/114.mp3' },
+      { id: 'surah-108', shortId: '108', title: 'Al-Kawthar (Abundance)',     reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/108.mp3' },
+      { id: 'surah-109', shortId: '109', title: 'Al-Kafirun (Disbelievers)',  reciter: 'Mishary Alafasy', url: 'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/109.mp3' },
+    ]);
+    const audioCurrent = signal(audioTracks.value[0]);
+    const audioPlaying = signal(false);
+    const audioProgress = signal(0);
+    const audioCurrentTime = signal(0);
+    const audioDuration = signal(0);
+    let audioElement = null;
+    function initAudio() {
+      if (!audioElement && typeof Audio !== 'undefined') {
+        audioElement = new Audio();
+        audioElement.addEventListener('timeupdate', () => {
+          audioCurrentTime.value = audioElement.currentTime || 0;
+          audioDuration.value = audioElement.duration || 0;
+          audioProgress.value = audioElement.duration ? (audioElement.currentTime / audioElement.duration) * 100 : 0;
+        });
+        audioElement.addEventListener('ended', () => { audioPlaying.value = false; audioProgress.value = 0; });
+        audioElement.addEventListener('error', () => { audioPlaying.value = false; });
+      }
+    }
+    const audioCurrentTimeLabel = computed(() => formatAudioTime(audioCurrentTime.value));
+    const audioDurationLabel = computed(() => formatAudioTime(audioDuration.value));
+    function formatAudioTime(s) {
+      if (!s || isNaN(s)) return '0:00';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${m}:${String(sec).padStart(2, '0')}`;
+    }
+    function audioSelect(id) {
+      const t = audioTracks.value.find(x => x.id === id) || audioTracks.value[0];
+      audioCurrent.value = t;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = t.url;
+        audioElement.load();
+        audioPlaying.value = false;
+        audioProgress.value = 0;
+      }
+    }
+    function audioTrackActiveClass(id) { return audioCurrent.value && audioCurrent.value.id === id ? 'audio-track-active' : ''; }
+    function audioPlay() {
+      if (!audioElement) initAudio();
+      if (audioElement && !audioElement.src) audioElement.src = audioCurrent.value.url;
+      if (audioElement) { audioElement.play().then(() => { audioPlaying.value = true; }).catch(() => { audioPlaying.value = false; }); }
+    }
+    function audioPause() {
+      if (audioElement) audioElement.pause();
+      audioPlaying.value = false;
+    }
+    function audioNext() {
+      const idx = audioTracks.value.findIndex(t => t.id === audioCurrent.value.id);
+      const next = audioTracks.value[(idx + 1) % audioTracks.value.length];
+      audioSelect(next.id);
+    }
+    function audioPrev() {
+      const idx = audioTracks.value.findIndex(t => t.id === audioCurrent.value.id);
+      const prev = audioTracks.value[(idx - 1 + audioTracks.value.length) % audioTracks.value.length];
+      audioSelect(prev.id);
+    }
+    function stopAudio() {
+      if (audioElement) { audioElement.pause(); audioPlaying.value = false; }
+    }
+
+    // ============== MOSQUE FINDER APP ==============
+    const mosqueList = signal([]);
+    const mosqueLoading = signal(false);
+    const mosqueError = signal('');
+    const mosqueRadius = signal(10);
+    async function refreshMosques() {
+      mosqueLoading.value = true;
+      mosqueError.value = '';
+      try {
+        const coords = await getCoords();
+        const places = await findMosques(coords, mosqueRadius.value);
+        mosqueList.value = places.slice(0, 30);
+        if (places.length === 0) mosqueError.value = 'No mosques found within ' + mosqueRadius.value + ' km. Try increasing the radius.';
+      } catch (e) {
+        mosqueError.value = 'Could not search mosques: ' + (e.message || String(e));
+      } finally { mosqueLoading.value = false; }
+    }
+    function onMosqueRadiusChange(ev) { mosqueRadius.value = parseInt(ev.target.value) || 10; }
+
+    // ============== HALAL FOOD APP ==============
+    const halalList = signal([]);
+    const halalLoading = signal(false);
+    const halalError = signal('');
+    const halalRadius = signal(10);
+    async function refreshHalal() {
+      halalLoading.value = true;
+      halalError.value = '';
+      try {
+        const coords = await getCoords();
+        const places = await findHalal(coords, halalRadius.value);
+        halalList.value = places.slice(0, 30);
+        if (places.length === 0) halalError.value = 'No halal restaurants found within ' + halalRadius.value + ' km. Try increasing the radius.';
+      } catch (e) {
+        halalError.value = 'Could not search halal food: ' + (e.message || String(e));
+      } finally { halalLoading.value = false; }
+    }
+    function onHalalRadiusChange(ev) { halalRadius.value = parseInt(ev.target.value) || 10; }
+
+    function placeDirectionsUrl(p) {
+      return `https://www.openstreetmap.org/directions?from=&to=${p.lat}%2C${p.lng}`;
+    }
+
+    // ============== SETTINGS APP ==============
+    const favoritesCount = signal(0);
+    const notesCount = signal(0);
+    const remindersCount = signal(0);
+    function loadSettingsCounts() {
+      favoritesCount.value = loadJSON('favorites', []).length;
+      notesCount.value = loadJSON('notes:all', []).length;
+      remindersCount.value = loadJSON('reminders', []).length;
+    }
+    function setFontSize(size) {
+      saveJSON('fontSize', size);
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.fontSize = size === 'small' ? '14px' : size === 'large' ? '18px' : '16px';
+      }
+    }
+    function settingsFontClass(size) {
+      const saved = loadJSON('fontSize', 'medium');
+      return saved === size ? 'settings-font-active' : '';
+    }
+    function clearAllData() {
+      if (typeof window !== 'undefined' && !window.confirm('Clear ALL local data? This cannot be undone.')) return;
+      clearStorage();
+      favoritesList.value = [];
+      notesList.value = [];
+      remindersList.value = [];
+      communityPosts.value = [];
+      favoritesCount.value = 0;
+      notesCount.value = 0;
+      remindersCount.value = 0;
+    }
+
+    // ============== COMMUNITY APP ==============
+    const communityPosts = signal([]);
+    const communityNewText = signal('');
+    function loadCommunity() {
+      communityPosts.value = loadJSON('community', []);
+    }
+    function onCommunityInput(ev) { communityNewText.value = ev.target.value; }
+    function addCommunityPost() {
+      const text = communityNewText.value.trim();
+      if (!text) return;
+      const post = {
+        id: 'post-' + Date.now(),
+        text,
+        author: 'You',
+        createdAt: Date.now(),
+        likes: 0,
+        liked: false,
+      };
+      communityPosts.value = [post, ...communityPosts.value];
+      saveJSON('community', communityPosts.value);
+      communityNewText.value = '';
+    }
+    function likeCommunityPost(id) {
+      communityPosts.value = communityPosts.value.map(p => {
+        if (p.id === id) return { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 };
+        return p;
+      });
+      saveJSON('community', communityPosts.value);
+    }
+    function deleteCommunityPost(id) {
+      communityPosts.value = communityPosts.value.filter(p => p.id !== id);
+      saveJSON('community', communityPosts.value);
+    }
+    function communityInitial(p) { return (p.author || 'A').charAt(0).toUpperCase(); }
+    function communityDateFormat(ts) {
+      return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    // ============== FAVORITES APP ==============
+    const favoritesList = signal([]);
+    function loadFavorites() {
+      favoritesList.value = loadJSON('favorites', []);
+    }
+    function toggleFavorite(type, id, title, subtitle) {
+      const exists = favoritesList.value.find(f => f.id === type + ':' + id);
+      if (exists) {
+        favoritesList.value = favoritesList.value.filter(f => f.id !== exists.id);
+      } else {
+        favoritesList.value = [{ id: type + ':' + id, type, refId: id, title, subtitle: subtitle || '', createdAt: Date.now() }, ...favoritesList.value];
+      }
+      saveJSON('favorites', favoritesList.value);
+    }
+    function removeFavorite(id) {
+      favoritesList.value = favoritesList.value.filter(f => f.id !== id);
+      saveJSON('favorites', favoritesList.value);
+    }
+    function clearFavorites() {
+      favoritesList.value = [];
+      saveJSON('favorites', favoritesList.value);
+    }
+    function duaFavClass(id) {
+      return favoritesList.value.find(f => f.id === 'dua:' + id) ? 'dua-fav-active' : '';
+    }
 
     return {
       theme, isLight, isDark, toggleTheme,
       activeApp, activeAppName, openApp, closeApp,
       activeCategory, categories, filteredApps, activeCategoryClass, setCategory,
       clockTime, greeting, hijriDate,
-      prayerTimes, nextPrayerName, nextPrayerTime, nextPrayer, prayerCountdown,
+      prayerTimes, nextPrayerName, nextPrayerTime, nextPrayer, prayerCountdown, refreshPrayerTimes,
+      // Quran
+      quranSurahList, quranCurrentSurah, quranCurrentSurahMeta, quranVerses, quranLoading, quranError,
+      loadQuranIndex, openSurah, closeSurah, playSurahAudio,
+      // Hadith
+      hadithList,
+      // Qibla
+      qiblaBearing: qiblaBearingVal, qiblaHeading, qiblaDistance: qiblaDistanceVal, qiblaOrientationSupported,
+      qiblaNeedleRotation, qiblaCompassRotation, initQibla, calibrateQibla,
+      // Tasbih
+      tasbihPresets, tasbihCount, tasbihTotal, tasbihTarget, tasbihProgress, tasbihCurrentDhikr,
+      setTasbihPreset, tasbihPresetActiveClass, tasbihIncrement, tasbihReset, tasbihResetTotal,
+      // Dua
+      duaCategories, duaFiltered, duaActiveCategory, setDuaCategory, duaCatActiveClass,
+      toggleFavorite, duaFavClass,
+      // Names
+      namesCurrent, namesNext, namesPrev, namesRandom,
+      // Zakat
+      zakatInputCash, zakatInputGold, zakatInputSilver, zakatInputInvestments, zakatInputReceivables, zakatInputInventory, zakatInputLiabilities,
+      zakatResult, zakatResultDisplay, onZakatInput, calculateZakat,
+      // Hijri Calendar
+      hijriViewDate, hijriCells, hijriWeekdays, hijriMonthLabelGregorian, hijriMonthLabelIslamic,
+      hijriSelectedCell, hijriSelectedGregorianLabel, hijriSelectedIslamicLabel, hijriSelectedEvent,
+      loadHijriCalendar, hijriPrevMonth, hijriNextMonth, hijriCellClass, selectHijriDay,
+      // Events
+      eventsList, eventMonthName,
+      // Library
+      libraryCats, libraryFiltered, librarySelected, libraryActiveCat,
+      setLibraryCat, libraryCatActiveClass, selectBook, closeBook, bookStars,
+      // Compass
+      compassHeadingVal, compassDialRotation, compassStatus,
+      compassHeadingLabel, compassDirection, calibrateCompass,
+      // Calculator
+      calcDisplay, calcExpression, calcInput,
+      // Notes
+      noteColors, notesList, notesNewTitle, notesNewBody, notesNewColor,
+      onNotesTitleInput, onNotesBodyInput, setNotesColor, notesColorActiveClass,
+      addNote, deleteNote, notesDateFormat,
+      // Reminders
+      remindersList, remindersSorted, remindersNewText, remindersNewTime, remindersNotificationSupported,
+      onRemindersTextInput, onRemindersTimeInput, addReminder, deleteReminder, snoozeReminder,
+      // Timer
+      timerDuration, timerRemaining, timerRunning, timerFinished, timerDisplay, timerCustomMinutes, timerCustomSeconds,
+      setTimerPreset, onTimerMinutesInput, onTimerSecondsInput, setTimerCustom, startTimer, pauseTimer, resetTimer,
+      // Flashlight
+      flashlightOn, flashlightBrightness, toggleFlashlight, onFlashlightBrightness,
+      // Weather
+      weatherData, weatherLoading, weatherError, refreshWeather, weatherDayLabel,
+      // Audio
+      audioTracks, audioCurrent, audioPlaying, audioProgress, audioCurrentTimeLabel, audioDurationLabel,
+      audioSelect, audioTrackActiveClass, audioPlay, audioPause, audioNext, audioPrev,
+      // Mosque
+      mosqueList, mosqueLoading, mosqueError, mosqueRadius, refreshMosques, onMosqueRadiusChange,
+      // Halal
+      halalList, halalLoading, halalError, halalRadius, refreshHalal, onHalalRadiusChange,
+      placeDirectionsUrl,
+      // Settings
+      favoritesCount, notesCount, remindersCount, setFontSize, settingsFontClass, clearAllData,
+      // Community
+      communityPosts, communityNewText, onCommunityInput, addCommunityPost, likeCommunityPost, deleteCommunityPost,
+      communityInitial, communityDateFormat,
+      // Favorites
+      favoritesList, removeFavorite, clearFavorites,
     };
   },
 };
 </script>
 
 <style scoped>
-.os { min-height: 100vh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; --bg: #E9FBF1; --text: #181F25; --surface: #FFFFFF; --primary: #05B34D; --accent: #F2B91C; --border: #d1e8db; --muted: #5a6c6a; }
+.os { min-height: 100vh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; --bg: #E9FBF1; --text: #181F25; --surface: #FFFFFF; --primary: #05B34D; --accent: #F2B91C; --border: #d1e8db; --muted: #5a6c6a; --radius: 12px; }
 .os[data-theme="dark"] { --bg: #181F25; --text: #E9FBF1; --surface: #232b32; --primary: #05B34D; --accent: #F2B91C; --border: #2d3a44; --muted: #8898a0; }
 .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); position: sticky; top: 0; z-index: 100; }
 .status-time { font-weight: 700; }
@@ -210,4 +1715,313 @@ export default {
 .app-back { background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; }
 .app-title { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
 .app-content { flex: 1; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; padding-bottom: 80px; }
+
+/* Common controls */
+.btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 4px 0; }
+.btn-primary:active { transform: scale(0.97); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px 4px 4px 0; display: inline-flex; align-items: center; gap: 6px; }
+.btn-secondary:active { transform: scale(0.97); }
+.btn-icon { background: none; border: none; color: var(--muted); padding: 6px; border-radius: 8px; cursor: pointer; }
+.btn-icon:active { background: var(--border); }
+.loading-text { color: var(--muted); text-align: center; padding: 20px; font-size: 14px; }
+.error-text { color: #e74c3c; text-align: center; padding: 12px; font-size: 13px; }
+.empty-text { color: var(--muted); text-align: center; padding: 24px 12px; font-size: 14px; font-style: italic; }
+
+/* Quran */
+.surah-row { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 10px; cursor: pointer; margin-bottom: 8px; text-align: left; }
+.surah-row:active { transform: scale(0.99); }
+.surah-num { width: 32px; height: 32px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.surah-info { flex: 1; display: flex; flex-direction: column; }
+.surah-name-en { font-weight: 700; font-size: 15px; color: var(--text); }
+.surah-meta { font-size: 11px; color: var(--muted); }
+.surah-name-ar { font-size: 18px; color: var(--primary); }
+.quran-detail-title { font-size: 20px; font-weight: 700; margin: 12px 0 4px 0; color: var(--text); }
+.quran-detail-meta { font-size: 12px; color: var(--muted); margin: 0 0 12px 0; }
+.verse-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.verse-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.verse-num { background: var(--primary); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.verse-play { background: var(--accent); color: white; border: none; padding: 6px; border-radius: 8px; cursor: pointer; }
+.verse-arabic { font-size: 22px; line-height: 1.8; color: var(--text); text-align: right; margin: 8px 0; }
+.verse-translit { font-size: 13px; color: var(--muted); font-style: italic; margin: 4px 0; }
+.verse-translation { font-size: 14px; color: var(--text); margin: 6px 0 0 0; line-height: 1.5; }
+
+/* Hadith */
+.hadith-header { margin-bottom: 16px; }
+.hadith-collection-title { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
+.hadith-collection-sub { font-size: 13px; color: var(--muted); margin: 4px 0 0 0; }
+.hadith-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.hadith-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.hadith-num { font-weight: 700; color: var(--primary); font-size: 13px; }
+.hadith-narrator { font-size: 12px; color: var(--muted); font-style: italic; }
+.hadith-arabic { font-size: 20px; line-height: 1.7; text-align: right; color: var(--text); margin: 8px 0; }
+.hadith-english { font-size: 14px; line-height: 1.6; color: var(--text); margin: 8px 0; }
+.hadith-source { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; font-style: italic; }
+
+/* Prayer */
+.prayer-list { display: flex; flex-direction: column; gap: 6px; }
+.prayer-card-row { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--border); padding: 14px 16px; border-radius: 10px; }
+.prayer-card-row.muted { opacity: 0.6; }
+.prayer-row-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.prayer-row-time { font-size: 18px; font-weight: 700; color: var(--primary); }
+.prayer-next-card { background: linear-gradient(135deg, var(--primary), #04a045); color: white; border-radius: 12px; padding: 16px; text-align: center; margin-top: 12px; }
+.prayer-next-label { font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+.prayer-next-time { font-size: 28px; font-weight: 700; margin: 4px 0; }
+.prayer-next-countdown { font-size: 13px; opacity: 0.9; }
+.prayer-method { font-size: 11px; color: var(--muted); text-align: center; margin: 12px 0; }
+
+/* Qibla */
+.qibla-compass-wrap { display: flex; justify-content: center; margin: 16px 0; }
+.qibla-compass { transition: transform 0.2s ease; }
+.qibla-bearing, .qibla-distance, .qibla-heading { text-align: center; font-size: 14px; color: var(--text); margin: 6px 0; }
+.qibla-hint { font-size: 12px; color: var(--muted); text-align: center; padding: 12px; }
+
+/* Tasbih */
+.tasbih-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.tasbih-preset { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; }
+.tasbih-preset-active { background: var(--primary); color: white; border-color: var(--primary); }
+.tasbih-display { text-align: center; background: var(--surface); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.tasbih-count { font-size: 64px; font-weight: 700; color: var(--primary); line-height: 1; }
+.tasbih-target { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.tasbih-progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin: 12px 0; overflow: hidden; }
+.tasbih-progress-fill { height: 100%; background: var(--primary); transition: width 0.2s ease; }
+.tasbih-total { font-size: 12px; color: var(--muted); }
+.tasbih-tap { display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--primary); color: white; border: none; padding: 24px; border-radius: 50%; width: 160px; height: 160px; margin: 16px auto; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 4px 12px rgba(5,179,77,0.3); }
+.tasbih-tap:active { transform: scale(0.95); }
+.tasbih-controls { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.tasbih-dhikr-arabic { text-align: center; font-size: 24px; color: var(--text); margin-top: 16px; }
+.tasbih-dhikr-translit { text-align: center; font-size: 14px; color: var(--muted); font-style: italic; }
+
+/* Dua */
+.dua-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.dua-cat { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; }
+.dua-cat-active { background: var(--primary); color: white; border-color: var(--primary); }
+.dua-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; position: relative; }
+.dua-title { font-size: 15px; font-weight: 700; margin: 0 0 8px 0; color: var(--primary); }
+.dua-arabic { font-size: 22px; line-height: 1.8; text-align: right; color: var(--text); margin: 8px 0; }
+.dua-translit { font-size: 13px; color: var(--muted); font-style: italic; margin: 4px 0; }
+.dua-translation { font-size: 14px; line-height: 1.6; color: var(--text); margin: 6px 0; }
+.dua-reference { font-size: 11px; color: var(--muted); font-style: italic; margin: 4px 0 0 0; }
+.dua-fav-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+.dua-fav-active { color: var(--accent); }
+.dua-fav-active svg { fill: var(--accent); }
+
+/* 99 Names */
+.names-card { background: linear-gradient(135deg, var(--primary), #04a045); color: white; border-radius: 16px; padding: 32px 20px; text-align: center; margin-bottom: 16px; }
+.names-num { font-size: 12px; opacity: 0.9; }
+.names-arabic { font-size: 48px; font-weight: 700; margin: 16px 0 8px 0; }
+.names-translit { font-size: 18px; font-style: italic; margin: 4px 0; }
+.names-english { font-size: 16px; opacity: 0.95; }
+.names-controls { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.names-count { text-align: center; font-size: 12px; color: var(--muted); font-style: italic; padding: 12px; }
+
+/* Zakat */
+.zakat-intro { font-size: 13px; color: var(--muted); margin-bottom: 16px; padding: 12px; background: var(--surface); border-radius: 10px; }
+.zakat-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; font-size: 13px; color: var(--text); font-weight: 600; }
+.zakat-field input { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: var(--surface); color: var(--text); }
+.zakat-calc-btn { width: 100%; padding: 12px; margin-top: 8px; }
+.zakat-result { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 16px; }
+.zakat-result-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--border); }
+.zakat-due { display: flex; justify-content: space-between; align-items: center; background: var(--primary); color: white; padding: 14px; border-radius: 10px; margin-top: 12px; font-size: 15px; font-weight: 700; }
+.zakat-due-amount { font-size: 20px; }
+.zakat-below { font-size: 13px; color: var(--muted); text-align: center; margin-top: 12px; font-style: italic; }
+
+/* Hijri Calendar */
+.hijri-month-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.hijri-month-title { text-align: center; }
+.hijri-gregorian { font-size: 15px; font-weight: 700; color: var(--text); }
+.hijri-islamic { font-size: 12px; color: var(--primary); }
+.hijri-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+.hijri-weekday { text-align: center; font-size: 11px; color: var(--muted); padding: 6px 0; font-weight: 600; }
+.hijri-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.hijri-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; cursor: pointer; min-height: 44px; }
+.hijri-cell:active { transform: scale(0.95); }
+.hijri-cell-outside { opacity: 0.35; }
+.hijri-cell-today { border-color: var(--primary); border-width: 2px; }
+.hijri-cell-event { background: linear-gradient(135deg, var(--accent), #d4a30e); color: white; }
+.hijri-cell-event .hijri-cell-greg, .hijri-cell-event .hijri-cell-hijri { color: white; }
+.hijri-cell-selected { background: var(--primary); color: white; }
+.hijri-cell-selected .hijri-cell-greg, .hijri-cell-selected .hijri-cell-hijri { color: white; }
+.hijri-cell-greg { font-size: 13px; font-weight: 700; color: var(--text); }
+.hijri-cell-hijri { font-size: 9px; color: var(--muted); }
+.hijri-selected-info { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 16px; text-align: center; }
+.hijri-selected-gregorian { font-size: 14px; font-weight: 600; margin: 0; color: var(--text); }
+.hijri-selected-islamic { font-size: 13px; color: var(--primary); margin: 4px 0 0 0; }
+.hijri-selected-event { background: var(--accent); color: white; border-radius: 10px; padding: 12px; margin-top: 8px; font-size: 13px; }
+
+/* Events */
+.events-intro { font-size: 13px; color: var(--muted); margin-bottom: 16px; padding: 12px; background: var(--surface); border-radius: 10px; }
+.event-card { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; gap: 12px; }
+.event-date { background: var(--primary); color: white; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; min-width: 56px; }
+.event-day { font-size: 20px; font-weight: 700; }
+.event-month { font-size: 11px; opacity: 0.9; }
+.event-body { flex: 1; }
+.event-name { font-size: 15px; font-weight: 700; margin: 0 0 2px 0; color: var(--text); }
+.event-arabic { font-size: 14px; color: var(--muted); margin: 0 0 6px 0; }
+.event-desc { font-size: 12px; line-height: 1.5; color: var(--text); margin: 0 0 6px 0; }
+.event-cat { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--border); color: var(--text); text-transform: uppercase; font-weight: 600; }
+.event-cat-eid { background: var(--accent); color: white; }
+.event-cat-fasting { background: var(--primary); color: white; }
+.event-cat-historical { background: #3498db; color: white; }
+.event-cat-observance { background: #9b59b6; color: white; }
+
+/* Library */
+.library-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.library-cat { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; }
+.library-cat-active { background: var(--primary); color: white; border-color: var(--primary); }
+.book-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer; text-align: left; }
+.book-card:active { transform: scale(0.99); }
+.book-title { font-size: 15px; font-weight: 700; margin: 0 0 4px 0; color: var(--text); }
+.book-author { font-size: 12px; color: var(--primary); margin: 0 0 4px 0; }
+.book-meta { font-size: 11px; color: var(--muted); margin: 0 0 6px 0; }
+.book-rating { display: flex; gap: 2px; color: var(--accent); }
+.book-detail-title { font-size: 20px; font-weight: 700; margin: 12px 0 4px 0; color: var(--text); }
+.book-detail-author { font-size: 14px; color: var(--primary); margin: 0 0 4px 0; }
+.book-detail-meta { font-size: 12px; color: var(--muted); margin: 0 0 12px 0; }
+.book-detail-desc { font-size: 14px; line-height: 1.6; color: var(--text); }
+
+/* Compass */
+.compass-dial { display: flex; justify-content: center; margin: 24px 0; transition: transform 0.2s ease; }
+.compass-heading, .compass-direction { text-align: center; font-size: 16px; color: var(--text); margin: 6px 0; }
+.compass-direction { font-size: 22px; font-weight: 700; color: var(--primary); }
+.compass-status { text-align: center; font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+/* Calculator */
+.calc-display { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: right; margin-bottom: 12px; }
+.calc-expression { font-size: 12px; color: var(--muted); min-height: 16px; }
+.calc-current { font-size: 36px; font-weight: 700; color: var(--text); word-break: break-all; }
+.calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.calc-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 18px 0; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; }
+.calc-btn:active { transform: scale(0.95); background: var(--border); }
+.calc-btn-op { background: var(--border); color: var(--primary); }
+.calc-btn-zero { grid-column: span 2; }
+.calc-btn-eq { background: var(--primary); color: white; }
+
+/* Notes */
+.notes-new { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.notes-input, .notes-textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); box-sizing: border-box; }
+.notes-textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+.notes-color-row { display: flex; align-items: center; gap: 8px; }
+.notes-color-label { font-size: 12px; color: var(--muted); }
+.notes-color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; padding: 0; }
+.notes-color-active { border-color: var(--text); transform: scale(1.15); }
+.note-item { background: var(--surface); border-left: 4px solid var(--primary); border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.note-item-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.note-item-title { font-size: 14px; font-weight: 700; margin: 0 0 6px 0; color: var(--text); }
+.note-delete { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+.note-delete:active { background: var(--border); }
+.note-item-body { font-size: 13px; color: var(--text); margin: 6px 0; line-height: 1.5; white-space: pre-wrap; }
+.note-item-date { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; }
+
+/* Reminders */
+.reminders-new { display: flex; flex-direction: column; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+.reminders-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); box-sizing: border-box; }
+.reminders-time { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); }
+.reminder-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+.reminder-time { background: var(--primary); color: white; padding: 8px 10px; border-radius: 8px; font-weight: 700; font-size: 13px; }
+.reminder-body { flex: 1; }
+.reminder-text { font-size: 14px; color: var(--text); margin: 0; }
+.reminder-snoozed { font-size: 11px; color: var(--accent); margin: 2px 0 0 0; }
+.reminder-actions { display: flex; gap: 4px; }
+.reminders-hint { font-size: 11px; color: var(--muted); text-align: center; padding: 12px; font-style: italic; }
+
+/* Timer */
+.timer-display { font-size: 64px; font-weight: 700; text-align: center; color: var(--primary); margin: 32px 0; font-variant-numeric: tabular-nums; }
+.timer-presets { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.timer-custom { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+.timer-input-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+.timer-input-row input { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--bg); color: var(--text); }
+.timer-controls { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+.timer-finished { text-align: center; font-size: 18px; color: var(--accent); font-weight: 700; margin-top: 16px; }
+
+/* Flashlight */
+.flashlight-state { text-align: center; margin: 32px 0; }
+.flashlight-toggle { width: 140px; height: 140px; border-radius: 50%; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.flashlight-on { background: var(--accent); color: white; box-shadow: 0 0 60px rgba(242,185,28,0.7); }
+.flashlight-off { background: var(--surface); color: var(--muted); border: 2px solid var(--border); }
+.flashlight-state-label { font-size: 18px; font-weight: 700; margin-top: 12px; color: var(--text); }
+.flashlight-brightness { text-align: center; margin: 16px 0; }
+.flashlight-brightness label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.flashlight-brightness input { width: 80%; max-width: 300px; }
+.flashlight-hint { font-size: 12px; color: var(--muted); text-align: center; padding: 12px; }
+
+/* Weather */
+.weather-current { background: linear-gradient(135deg, var(--primary), #04a045); color: white; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 16px; }
+.weather-temp { font-size: 56px; font-weight: 700; }
+.weather-desc { font-size: 18px; text-transform: capitalize; }
+.weather-feels { font-size: 13px; opacity: 0.9; }
+.weather-meta { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin-top: 12px; }
+.weather-timezone { font-size: 11px; opacity: 0.7; margin-top: 8px; }
+.weather-forecast { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+.weather-forecast-title { font-size: 14px; font-weight: 700; margin: 0 0 10px 0; color: var(--text); }
+.forecast-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 13px; color: var(--text); }
+.forecast-row:last-child { border-bottom: none; }
+.forecast-day { font-weight: 700; min-width: 50px; }
+.forecast-desc { flex: 1; padding: 0 12px; color: var(--muted); text-transform: capitalize; font-size: 12px; }
+.forecast-temps { font-weight: 600; }
+
+/* Audio */
+.audio-now-playing { display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, var(--primary), #04a045); color: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+.audio-art { width: 80px; height: 80px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; }
+.audio-title { font-size: 16px; font-weight: 700; margin: 0; }
+.audio-reciter { font-size: 12px; opacity: 0.9; margin: 4px 0 0 0; }
+.audio-progress { margin-bottom: 16px; }
+.audio-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.audio-progress-fill { height: 100%; background: var(--primary); transition: width 0.3s linear; }
+.audio-time { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.audio-controls { display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 24px; }
+.audio-play-btn { width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.audio-play-btn:active { transform: scale(0.95); }
+.audio-playlist { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+.audio-playlist-title { font-size: 13px; font-weight: 700; margin: 0 0 10px 0; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.audio-track { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; color: var(--text); }
+.audio-track:active { background: var(--border); }
+.audio-track-active { background: rgba(5,179,77,0.1); }
+.audio-track-num { background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.audio-track-name { font-size: 13px; }
+
+/* Places (Mosque + Halal) */
+.places-header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.places-intro { font-size: 12px; color: var(--muted); margin: 0; }
+.places-select { padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; }
+.place-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.place-distance { background: var(--primary); color: white; padding: 8px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; min-width: 60px; text-align: center; }
+.place-body { flex: 1; }
+.place-name { font-size: 14px; font-weight: 700; margin: 0 0 2px 0; color: var(--text); }
+.place-type { font-size: 11px; color: var(--primary); margin: 0 0 2px 0; }
+.place-address { font-size: 11px; color: var(--muted); margin: 0; }
+.place-directions { color: var(--primary); padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; }
+
+/* Settings */
+.settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.settings-section-title { font-size: 13px; font-weight: 700; margin: 0 0 12px 0; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 14px; color: var(--text); }
+.settings-toggle { display: inline-flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.settings-font-row { display: flex; gap: 6px; }
+.settings-font-active { background: var(--primary); color: white; border-color: var(--primary); }
+.settings-data-info { font-size: 13px; color: var(--muted); margin: 0 0 12px 0; }
+.settings-danger { color: #e74c3c; border-color: #e74c3c; }
+.settings-about-text { font-size: 13px; color: var(--text); margin: 0 0 8px 0; }
+.settings-version { font-size: 11px; color: var(--muted); margin: 0 0 4px 0; }
+.settings-credits { font-size: 11px; color: var(--muted); margin: 0; font-style: italic; }
+
+/* Community */
+.community-new { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.community-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text); box-sizing: border-box; min-height: 70px; resize: vertical; font-family: inherit; }
+.community-post { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.community-post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.community-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.community-author { font-size: 13px; font-weight: 700; margin: 0; color: var(--text); }
+.community-date { font-size: 11px; color: var(--muted); margin: 0; }
+.community-text { font-size: 14px; line-height: 1.5; color: var(--text); margin: 0 0 10px 0; white-space: pre-wrap; }
+.community-actions { display: flex; gap: 12px; }
+.community-action { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 10px; border-radius: 16px; cursor: pointer; font-size: 12px; }
+.community-liked { color: #e74c3c; border-color: #e74c3c; }
+.community-liked svg { fill: #e74c3c; }
+
+/* Favorites */
+.favorite-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.favorite-type { background: var(--accent); color: white; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.favorite-body { flex: 1; }
+.favorite-title { font-size: 14px; font-weight: 700; margin: 0; color: var(--text); }
+.favorite-subtitle { font-size: 11px; color: var(--muted); margin: 2px 0 0 0; }
 </style>
