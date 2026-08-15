@@ -1,65 +1,105 @@
 <template>
   <div class="os" birr:bind:data-theme="theme">
+    <!-- =================== PROGRADE STATUS BAR =================== -->
     <div class="status-bar">
-      <span class="status-time">{{ clockTime }}</span>
-      <span class="status-date">{{ hijriDate }}</span>
-      <span class="status-prayer" birr:if="nextPrayer">{{ nextPrayer }}</span>
+      <div class="status-left">
+        <span class="status-time">{{ clockTime }}</span>
+        <span class="status-date">{{ hijriDate }}</span>
+      </div>
+      <div class="status-center">
+        <span class="status-prayer" birr:if="nextPrayer">{{ nextPrayer }}</span>
+      </div>
+      <div class="status-right">
+        <span class="status-glyph" birr:bind:innerHTML="icon('signal', { size: 14 })"></span>
+        <span class="status-glyph" birr:bind:innerHTML="icon('wifi', { size: 14 })"></span>
+        <span class="status-glyph" birr:bind:innerHTML="icon('battery', { size: 16 })"></span>
+      </div>
     </div>
 
+    <!-- =================== PROGRADE HOME / LAUNCHER =================== -->
     <div birr:if="activeApp === null" class="home-screen">
-      <div class="home-header">
+      <div class="home-hero">
         <p class="home-greeting">{{ greeting }}</p>
         <p class="home-bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <p class="home-date">{{ hijriDate }}</p>
       </div>
 
-      <div class="prayer-widget" birr:if="prayerTimes">
-        <div class="prayer-widget-label">Next Prayer</div>
-        <div class="prayer-widget-name">{{ nextPrayerName }}</div>
-        <div class="prayer-widget-time">{{ nextPrayerTime }}</div>
-        <div class="prayer-widget-countdown">{{ prayerCountdown }}</div>
+      <!-- Search bar -->
+      <div class="search-bar">
+        <span class="search-glyph" birr:bind:innerHTML="icon('search', { size: 18 })"></span>
+        <input class="search-input" type="text" placeholder="Search apps…" birr:bind:value="searchQuery" birr:on:input="onSearchInput($event)"/>
+        <button birr:if="searchQuery" class="search-clear" birr:on:click="clearSearch()" birr:bind:innerHTML="icon('x', { size: 16 })" aria-label="Clear search"></button>
       </div>
 
-      <div class="category-tabs">
-        <button birr:for="cat in categories" birr:key="cat.id" class="cat-tab {{ activeCategoryClass(cat.id) }}" birr:on:click="setCategory(cat.id)">
-          {{ cat.name }}
-        </button>
-      </div>
-
-      <div class="app-grid">
-        <button birr:for="app in filteredApps" birr:key="app.id" class="app-icon" birr:on:click="openApp(app.id)">
-          <div class="app-icon-circle" style="background: {{ app.color }}">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path d="{{ app.icon }}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+      <!-- Widgets row -->
+      <div class="widgets">
+        <div class="widget widget-prayer" birr:if="prayerTimes">
+          <div class="widget-glyph" birr:bind:innerHTML="icon('clock', { size: 22 })"></div>
+          <div class="widget-body">
+            <div class="widget-label">Next Prayer</div>
+            <div class="widget-name">{{ nextPrayerName }}</div>
+            <div class="widget-time">{{ nextPrayerTime }}</div>
           </div>
-          <span class="app-icon-label">{{ app.name }}</span>
+          <div class="widget-countdown">{{ prayerCountdown }}</div>
+        </div>
+        <div class="widget widget-clock">
+          <div class="widget-glyph" birr:bind:innerHTML="icon('sun', { size: 22 })"></div>
+          <div class="widget-body">
+            <div class="widget-label">Now</div>
+            <div class="widget-name">{{ clockTime }}</div>
+            <div class="widget-time">{{ greeting }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category tabs (hidden while searching) -->
+      <div birr:if="searchQuery === ''" class="category-tabs">
+        <button birr:for="cat in categories" birr:key="cat.id" class="cat-tab {{ activeCategoryClass(cat.id) }}" birr:on:click="setCategory(cat.id)">
+          <span class="cat-tab-glyph" birr:bind:innerHTML="icon(cat.icon, { size: 14 })"></span>
+          <span class="cat-tab-label">{{ cat.name }}</span>
         </button>
       </div>
 
+      <!-- App grid with gradient tiles -->
+      <div class="app-grid">
+        <button birr:for="app in visibleApps" birr:key="app.id" class="app-tile" birr:on:click="openApp(app.id)">
+          <div class="app-tile-glyph-wrap" style="background: {{ app.gradient }}">
+            <span class="app-tile-glyph" birr:bind:innerHTML="icon(app.icon, { size: 28 })"></span>
+          </div>
+          <span class="app-tile-label">{{ app.name }}</span>
+        </button>
+      </div>
+
+      <p birr:if="visibleApps.length === 0" class="empty-text">No apps match "{{ searchQuery }}".</p>
+
+      <!-- Prograde dock -->
       <div class="dock">
-        <button class="dock-item" birr:on:click="openApp('quran')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="dock-item" birr:on:click="closeApp()" aria-label="Home">
+          <span birr:bind:innerHTML="icon('home', { size: 22 })"></span>
         </button>
-        <button class="dock-item" birr:on:click="openApp('prayer')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="dock-item" birr:on:click="focusSearch()" aria-label="Search">
+          <span birr:bind:innerHTML="icon('search', { size: 22 })"></span>
         </button>
-        <button class="dock-item" birr:on:click="openApp('qibla')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 16l-4-4h8l-4 4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="dock-item" birr:on:click="openApp('quran')" aria-label="Quran">
+          <span birr:bind:innerHTML="icon('book-open', { size: 22 })"></span>
         </button>
-        <button class="dock-item" birr:on:click="openApp('tasbih')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 110 12 6 6 0 010-12z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="dock-item" birr:on:click="openApp('prayer')" aria-label="Prayer">
+          <span birr:bind:innerHTML="icon('clock', { size: 22 })"></span>
         </button>
-        <button class="dock-item" birr:on:click="toggleTheme">
-          <svg birr:if="isLight" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg birr:if="isDark" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <button class="dock-item" birr:on:click="openApp('favorites')" aria-label="Favorites">
+          <span birr:bind:innerHTML="icon('star', { size: 22 })"></span>
+        </button>
+        <button class="dock-item dock-theme" birr:on:click="toggleTheme" aria-label="Toggle theme">
+          <span birr:if="isLight" birr:bind:innerHTML="icon('moon', { size: 22 })"></span>
+          <span birr:if="isDark" birr:bind:innerHTML="icon('sun', { size: 22 })"></span>
         </button>
       </div>
     </div>
 
     <div birr:if="activeApp !== null" class="app-viewer">
       <div class="app-header">
-        <button class="app-back" birr:on:click="closeApp">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="app-back" birr:on:click="closeApp" aria-label="Back">
+          <span birr:bind:innerHTML="icon('arrow-left', { size: 20 })"></span>
         </button>
         <h2 class="app-title">{{ activeAppName }}</h2>
       </div>
@@ -724,7 +764,7 @@
 </template>
 
 <script>
-import { signal, computed, effect } from 'birrstack-core';
+import { signal, computed, effect, icon } from 'birrstack-core';
 import { APPS, CATEGORIES } from './data/apps';
 import { getThemeSignal, toggleTheme } from './lib/theme';
 import { getPrayerTimes, getHijriDate } from './data/prayer';
@@ -759,6 +799,25 @@ export default {
     const activeCategory = signal('ibadah');
     const categories = CATEGORIES;
     const filteredApps = computed(() => APPS.filter(a => a.category === activeCategory.value));
+
+    // Prograde search — when query is non-empty, search across ALL apps;
+    // otherwise show the active category's apps.
+    const searchQuery = signal('');
+    const visibleApps = computed(() => {
+      const q = searchQuery.value.trim().toLowerCase();
+      if (q === '') return filteredApps.value;
+      return APPS.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.id.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+      );
+    });
+    function onSearchInput(event) { searchQuery.value = event.target.value; }
+    function clearSearch() { searchQuery.value = ''; }
+    function focusSearch() {
+      const el = document.querySelector('.search-input');
+      if (el) { el.focus(); activeApp.value = null; }
+    }
 
     function activeCategoryClass(catId) { return activeCategory.value === catId ? 'cat-active' : ''; }
     function setCategory(catId) { activeCategory.value = catId; }
@@ -1623,8 +1682,10 @@ export default {
 
     return {
       theme, isLight, isDark, toggleTheme,
+      icon,
       activeApp, activeAppName, openApp, closeApp,
       activeCategory, categories, filteredApps, activeCategoryClass, setCategory,
+      searchQuery, visibleApps, onSearchInput, clearSearch, focusSearch,
       clockTime, greeting, hijriDate,
       prayerTimes, nextPrayerName, nextPrayerTime, nextPrayer, prayerCountdown, refreshPrayerTimes,
       // Quran
@@ -1695,35 +1756,67 @@ export default {
 </script>
 
 <style scoped>
-.os { min-height: 100vh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; --bg: #E9FBF1; --text: #181F25; --surface: #FFFFFF; --primary: #05B34D; --accent: #F2B91C; --border: #d1e8db; --muted: #5a6c6a; --radius: 12px; }
-.os[data-theme="dark"] { --bg: #181F25; --text: #E9FBF1; --surface: #232b32; --primary: #05B34D; --accent: #F2B91C; --border: #2d3a44; --muted: #8898a0; }
-.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); position: sticky; top: 0; z-index: 100; }
-.status-time { font-weight: 700; }
-.status-date { color: var(--muted); }
-.status-prayer { color: var(--primary); font-weight: 600; }
-.home-screen { padding: 16px; padding-bottom: 80px; max-width: 600px; margin: 0 auto; }
-.home-header { text-align: center; margin-bottom: 24px; }
-.home-greeting { font-size: 18px; color: var(--muted); margin: 0; }
-.home-bismillah { font-size: 20px; color: var(--primary); margin: 8px 0 0 0; font-weight: 600; }
-.prayer-widget { background: linear-gradient(135deg, var(--primary), #04a045); color: white; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 24px; }
-.prayer-widget-label { font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
-.prayer-widget-name { font-size: 24px; font-weight: 700; margin: 4px 0; }
-.prayer-widget-time { font-size: 32px; font-weight: 700; }
-.prayer-widget-countdown { font-size: 13px; opacity: 0.9; margin-top: 4px; }
-.category-tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.cat-tab { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.cat-active { background: var(--primary); color: white; border-color: var(--primary); }
-.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.app-icon { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px; }
-.app-icon-circle { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease; }
-.app-icon:active .app-icon-circle { transform: scale(0.9); }
-.app-icon-label { font-size: 11px; color: var(--text); text-align: center; font-weight: 500; }
-.dock { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 16px; max-width: 600px; margin: 0 auto; z-index: 100; }
-.dock-item { background: none; border: none; color: var(--primary); cursor: pointer; padding: 8px 16px; border-radius: 12px; }
-.dock-item:active { background: var(--border); }
-.app-viewer { min-height: 100vh; display: flex; flex-direction: column; }
-.app-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-.app-back { background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; }
+.os { min-height: 100vh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; --bg: #E9FBF1; --text: #181F25; --surface: #FFFFFF; --primary: #05B34D; --accent: #F2B91C; --border: #d1e8db; --muted: #5a6c6a; --radius: 12px; --glass: rgba(255,255,255,0.65); --glass-border: rgba(255,255,255,0.5); --shadow: 0 8px 32px rgba(24,31,37,0.10); --hero-grad: linear-gradient(135deg, #05B34D 0%, #0d8a3a 60%, #F2B91C 140%); transition: background-color 0.4s ease, color 0.4s ease; }
+.os[data-theme="dark"] { --bg: #181F25; --text: #E9FBF1; --surface: #232b32; --primary: #05B34D; --accent: #F2B91C; --border: #2d3a44; --muted: #8898a0; --glass: rgba(35,43,50,0.6); --glass-border: rgba(255,255,255,0.08); --shadow: 0 8px 32px rgba(0,0,0,0.35); --hero-grad: linear-gradient(135deg, #0d2a1a 0%, #181F25 60%, #2d2410 140%); }
+/* Status bar — frosted glass */
+.status-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: var(--glass); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--glass-border); font-size: 12px; color: var(--text); position: sticky; top: 0; z-index: 100; transition: background-color 0.4s ease, border-color 0.4s ease; }
+.status-left { display: flex; flex-direction: column; gap: 1px; }
+.status-center { display: flex; }
+.status-right { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+.status-glyph { display: inline-flex; }
+.status-time { font-weight: 700; font-size: 13px; letter-spacing: 0.3px; }
+.status-date { color: var(--muted); font-size: 11px; }
+.status-prayer { color: var(--primary); font-weight: 600; background: rgba(5,179,77,0.12); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
+/* Home / launcher */
+.home-screen { padding: 14px 16px 110px; max-width: 640px; margin: 0 auto; }
+.home-hero { text-align: center; margin-bottom: 18px; padding: 24px 16px; border-radius: 22px; background: var(--hero-grad); color: #fff; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.home-hero::after { content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%); pointer-events: none; }
+.home-greeting { font-size: 15px; color: rgba(255,255,255,0.85); margin: 0; font-weight: 500; }
+.home-bismillah { font-size: 22px; color: #fff; margin: 8px 0 0 0; font-weight: 600; }
+.home-date { font-size: 12px; color: rgba(255,255,255,0.75); margin: 6px 0 0 0; }
+/* Search bar — glass */
+.search-bar { display: flex; align-items: center; gap: 10px; background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 10px 14px; margin-bottom: 16px; box-shadow: var(--shadow); transition: background-color 0.4s ease, border-color 0.4s ease; }
+.search-glyph { display: inline-flex; color: var(--muted); }
+.search-input { flex: 1; border: none; background: transparent; color: var(--text); font-size: 15px; outline: none; font-family: inherit; }
+.search-input::placeholder { color: var(--muted); }
+.search-clear { display: inline-flex; align-items: center; justify-content: center; background: var(--border); border: none; color: var(--text); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; }
+/* Widgets row */
+.widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.widget { display: flex; align-items: center; gap: 10px; background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); transition: background-color 0.4s ease, border-color 0.4s ease, transform 0.15s ease; }
+.widget:active { transform: scale(0.98); }
+.widget-prayer { background: linear-gradient(135deg, rgba(5,179,77,0.92), rgba(4,160,69,0.92)); border-color: rgba(255,255,255,0.18); color: #fff; }
+.widget-clock { background: linear-gradient(135deg, rgba(242,185,28,0.92), rgba(212,163,14,0.92)); border-color: rgba(255,255,255,0.18); color: #fff; }
+.widget-glyph { display: inline-flex; flex-shrink: 0; }
+.widget-body { flex: 1; min-width: 0; }
+.widget-label { font-size: 10px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+.widget-name { font-size: 15px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+.widget-time { font-size: 12px; opacity: 0.9; margin-top: 1px; }
+.widget-countdown { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 10px; white-space: nowrap; }
+/* Category tabs — pill with icon */
+.category-tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
+.category-tabs::-webkit-scrollbar { display: none; }
+.cat-tab { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: all 0.2s ease; }
+.cat-tab-glyph { display: inline-flex; }
+.cat-tab:active { transform: scale(0.95); }
+.cat-active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(5,179,77,0.3); }
+/* App grid with gradient tiles */
+.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 12px; margin-bottom: 24px; }
+.app-tile { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 4px; }
+.app-tile-glyph-wrap { width: 58px; height: 58px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 6px 16px rgba(24,31,37,0.18); transition: transform 0.15s ease, box-shadow 0.15s ease; position: relative; overflow: hidden; }
+.app-tile-glyph-wrap::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.22), transparent); border-radius: 16px 16px 0 0; pointer-events: none; }
+.app-tile-glyph { display: inline-flex; position: relative; z-index: 1; }
+.app-tile:active .app-tile-glyph-wrap { transform: scale(0.88); box-shadow: 0 3px 8px rgba(24,31,37,0.2); }
+.app-tile-label { font-size: 11px; color: var(--text); text-align: center; font-weight: 500; line-height: 1.2; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Prograde dock — floating frosted glass */
+.dock { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 560px; background: var(--glass); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border); display: flex; justify-content: space-around; align-items: center; padding: 10px 12px; border-radius: 22px; z-index: 100; box-shadow: var(--shadow); transition: background-color 0.4s ease, border-color 0.4s ease; }
+.dock-item { background: none; border: none; color: var(--primary); cursor: pointer; padding: 9px 12px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.2s ease, transform 0.15s ease; }
+.dock-item:active { background: rgba(5,179,77,0.14); transform: scale(0.9); }
+.dock-theme { color: var(--accent); }
+/* App viewer */
+.app-viewer { min-height: 100vh; display: flex; flex-direction: column; animation: appFadeIn 0.25s ease; }
+@keyframes appFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.app-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; transition: background-color 0.4s ease, border-color 0.4s ease; }
+.app-back { background: var(--surface); border: 1px solid var(--border); color: var(--text); cursor: pointer; padding: 8px; border-radius: 10px; display: inline-flex; }
 .app-title { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
 .app-content { flex: 1; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; padding-bottom: 80px; }
 

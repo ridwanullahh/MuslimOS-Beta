@@ -66,6 +66,32 @@ export function appendChild(parent, child) {
 }
 /** Bind an element attribute to a reactive cell. */
 export function bindAttr(el, attr, value) {
+    // innerHTML and textContent are properties, not attributes — set them directly
+    // so that `birr:bind:innerHTML="icon('book-open')"` renders actual markup.
+    if (attr === 'innerHTML' || attr === 'textContent') {
+        if (isReactive(value)) {
+            const reactive = value;
+            effect(() => {
+                const v = reactive.value;
+                if (attr === 'innerHTML') {
+                    el.innerHTML = v === null || v === undefined || v === false ? '' : String(v);
+                }
+                else {
+                    el.textContent = v === null || v === undefined || v === false ? '' : String(v);
+                }
+            });
+        }
+        else {
+            const v = value;
+            if (attr === 'innerHTML') {
+                el.innerHTML = v === null || v === undefined || v === false ? '' : String(v);
+            }
+            else {
+                el.textContent = v === null || v === undefined || v === false ? '' : String(v);
+            }
+        }
+        return;
+    }
     if (isReactive(value)) {
         const reactive = value;
         effect(() => {

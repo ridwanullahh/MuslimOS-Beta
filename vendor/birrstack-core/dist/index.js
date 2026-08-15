@@ -27,6 +27,8 @@ export { configureLoader, showLoader, hideLoader, isLoading, mountLoader, withLo
 export { renderToString, renderToDocument, } from './ssr/index.js';
 // Utility CSS (Tailwind-like)
 export { configureUtilities, generateUtilityCss, injectUtilityCss, } from './utils/index.js';
+// Icon system (stroke-based SVG registry)
+export { icon, listIcons, hasIcon, } from './icon/index.js';
 /** BirrStack version. */
 export const VERSION = '0.0.3';
 //# sourceMappingURL=index.js.map

@@ -18,6 +18,7 @@ export { useFetch, prefetch, clearFetchCache, type FetchOptions, type FetchResul
 export { configureLoader, showLoader, hideLoader, isLoading, mountLoader, withLoader, type LoaderOptions, } from './loader/index.js';
 export { renderToString, renderToDocument, type SSRContext, } from './ssr/index.js';
 export { configureUtilities, generateUtilityCss, injectUtilityCss, type UtilityConfig, } from './utils/index.js';
+export { icon, listIcons, hasIcon, type IconOptions, } from './icon/index.js';
 /** BirrStack version. */
 export declare const VERSION = "0.0.3";
 //# sourceMappingURL=index.d.ts.map
